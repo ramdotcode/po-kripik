@@ -2,7 +2,7 @@
 // logo, hiasan, langkah "Cara Pesan", stepper qty, header halaman, footer WA.
 import { Fragment } from "react";
 import Link from "next/link";
-import { KONTAK_WA, LOKASI_ANTAR, waLink } from "../lib/toko";
+import { DIBUAT_OLEH, KONTAK_WA, LOKASI_ANTAR, waLink } from "../lib/toko";
 import {
   IkonAkun,
   IkonCentang,
@@ -217,9 +217,11 @@ export function HeaderHalaman({ judul, sub, kembali }) {
   );
 }
 
-export function FooterWa({ teks, pesan, className = "" }) {
+// Footer halaman pembeli: kontak WA + kredit pembuat web. `privasi` = tampilkan tautan Kebijakan Privasi.
+export function FooterWa({ teks, pesan, privasi = false, className = "" }) {
   return (
-    <p className={`flex items-center justify-center gap-1.5 px-4 text-center text-xs text-stone-500 ${className}`}>
+    <div className={className}>
+    <p className="flex items-center justify-center gap-1.5 px-4 text-center text-xs text-stone-500">
       <IkonWhatsApp className="h-4 w-4 shrink-0 text-[#25D366]" />
       <span>
         {teks}{" "}
@@ -233,5 +235,25 @@ export function FooterWa({ teks, pesan, className = "" }) {
         </a>
       </span>
     </p>
+    <p className="mt-2 px-4 text-center text-[11px] text-stone-400">
+      {privasi && (
+        <>
+          <Link href="/privasi" className="underline underline-offset-2">
+            Kebijakan Privasi
+          </Link>
+          <span aria-hidden="true"> · </span>
+        </>
+      )}
+      Dibuat oleh{" "}
+      <a
+        href={DIBUAT_OLEH.url}
+        target="_blank"
+        rel="noopener"
+        className="font-semibold text-coklat-700 underline underline-offset-2"
+      >
+        {DIBUAT_OLEH.nama}
+      </a>
+    </p>
+    </div>
   );
 }

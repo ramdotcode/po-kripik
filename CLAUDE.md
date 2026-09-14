@@ -118,6 +118,7 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
   - Admin ikut gaya yang sama: header terang sticky + tab pill. Pesanan: ringkasan (nilai, jumlah tanpa batal, bar sudah dibayar), cari nama/kode/WA, filter status, kode #8 char, status berwarna (+ konfirmasi saat batal, revert kalau gagal), tombol "Tandai Lunas" untuk `menunggu_konfirmasi`, pratinjau bukti di modal. Batch: jumlah pesanan per batch, konfirmasi buka/tutup. Produk: saklar aktif. Link WA pembeli lewat `waPembeli()` di `lib/toko.js`
 - Komponen admin dipecah ke `components/admin/*.jsx`, `app/admin/page.jsx` cuma shell + auth
 - Kontak toko (WA PO 0855-9119-1217) di `lib/toko.js` — jangan hardcode nomor di komponen
+- Footer semua halaman pembeli (`FooterWa` di Brand.jsx) memuat kredit "Dibuat oleh ramcode.site" → https://www.ramcode.site (`DIBUAT_OLEH` di lib/toko.js); prop `privasi` menambah tautan Kebijakan Privasi (dipakai katalog)
 - Push ke GitHub selalu lewat remote `git@github.com-ramdotcode:ramdotcode/po-kripik.git` (alias `github.com` biasa = akun lain)
 - Push ke `main` memicu deploy production Vercel — pastikan env var di Vercel sudah lengkap dulu
 - Matikan dev server lewat PID port-nya (`lsof -tiTCP:3001`), JANGAN `pkill -f "next dev"` — ikut membunuh dev server project lain
