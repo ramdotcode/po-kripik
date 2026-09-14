@@ -90,8 +90,10 @@ Buka http://localhost:3000 (di HP: pakai IP laptop, misal http://192.168.1.x:300
 1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → **OAuth consent screen**
    (External, nama app "PO Kripik", email support) → **Credentials → Create credentials → OAuth client ID**
    (Web application).
-   - Authorized JavaScript origins: `https://kripik.ramcode.site` dan `http://localhost:3001`
-   - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+   - Authorized JavaScript origins: `https://kripik.ramcode.site` dan `http://localhost:3001` — **wajib**,
+     karena tombol login Google berjalan langsung di domain ini
+   - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback` (cuma dipakai cara login
+     cadangan kalau tombol Google gagal dimuat)
 2. Supabase → **Authentication → Sign In / Providers → Google** → aktifkan, tempel Client ID & Secret.
 3. Supabase → **Authentication → URL Configuration**:
    - Site URL: `https://kripik.ramcode.site`

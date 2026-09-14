@@ -5,7 +5,9 @@ import Link from "next/link";
 import { supabase, rupiah } from "../lib/supabase";
 import { useCart } from "../lib/cart";
 import { LOKASI_ANTAR, waLink } from "../lib/toko";
-import { masukGoogle, namaAkun, useSesi } from "../lib/auth";
+import { useRouter } from "next/navigation";
+import { namaAkun, useSesi } from "../lib/auth";
+import TombolGoogle from "../components/TombolGoogle";
 import { CaraPesan, Daun, FooterWa, Logo, Percik, Stempel, Stepper } from "../components/Brand";
 import {
   IkonBulan,
@@ -19,7 +21,6 @@ import {
   IkonWhatsApp,
   IkonAkun,
   IkonChevronKanan,
-  IkonGoogle,
 } from "../components/Ikon";
 
 // Urutan poster (sort_order) dulu; yang belum punya urutan di belakang, urut abjad.
@@ -149,6 +150,7 @@ function HeroBatch({ batch, loading }) {
 // & lihat pesanannya tanpa harus bikin pesanan dulu.
 function BarAkun() {
   const sesi = useSesi();
+  const router = useRouter();
   const uid = sesi?.user?.id;
   const [perluBayar, setPerluBayar] = useState(0);
 
@@ -173,14 +175,7 @@ function BarAkun() {
           <b className="block">Sudah pernah pesan?</b>
           <span className="text-xs text-stone-500">Masuk buat lihat pesanan & bayar</span>
         </p>
-        <button
-          type="button"
-          onClick={() => masukGoogle("/pesanan")}
-          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 text-sm font-bold shadow-sm transition active:scale-[0.98]"
-        >
-          <IkonGoogle className="h-4 w-4" />
-          Masuk
-        </button>
+        <TombolGoogle ringkas kembaliKe="/pesanan" onMasuk={() => router.push("/pesanan")} className="shrink-0" />
       </div>
     );
 

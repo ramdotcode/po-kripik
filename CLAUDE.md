@@ -10,7 +10,11 @@ Pesanan dikelompokkan per **batch PO** yang dibuka/ditutup dari halaman admin.
   - `lib/supabase.js` — client browser (anon key)
   - `lib/supabase-server.js` — client server (service role key, bypass RLS). JANGAN diimport dari komponen `"use client"`.
 - Auth admin: Supabase Auth email+password, dicek ke tabel `admins`
-- Auth pembeli: Supabase Auth **Google** (`lib/auth.js`: `masukGoogle`, `useSesi`, `fetchAuth`, `namaAkun`). Wajib login sebelum pesan.
+- Auth pembeli: Supabase Auth **Google** (`lib/auth.js`: `useSesi`, `fetchAuth`, `namaAkun`). Wajib login sebelum pesan.
+  - Tombol login = `components/TombolGoogle.jsx`: Google Identity Services di domain sendiri → `supabase.auth.signInWithIdToken`
+    (nonce: hash SHA-256 hex ke Google, mentah ke Supabase). Pembeli melihat kripik.ramcode.site, BUKAN supabase.co.
+    Client ID publik di `lib/auth.js` (bisa di-override `NEXT_PUBLIC_GOOGLE_CLIENT_ID`). Butuh Authorized JavaScript origins di Google Cloud.
+  - `masukGoogle()` (redirect lewat supabase.co) cuma CADANGAN, muncul kalau skrip GIS gagal dimuat
   Route API memverifikasi token lewat `lib/auth-server.js` (`userDariRequest`) — jangan percaya user_id dari browser
 - State keranjang: React Context + localStorage (`lib/cart.js`)
 - Pembayaran SEKARANG: **manual** — QRIS statis yang diupload admin (bucket publik `toko`, URL di `settings.qris_url`) → pembeli upload foto bukti → admin ACC/Tolak. Boleh bayar belakangan.

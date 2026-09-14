@@ -3,9 +3,10 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { supabase, rupiah } from "../../lib/supabase";
-import { keluar, masukGoogle, useSesi } from "../../lib/auth";
+import { keluar, useSesi } from "../../lib/auth";
+import TombolGoogle from "../../components/TombolGoogle";
 import { FooterWa, HeaderHalaman, Logo } from "../../components/Brand";
-import { IkonChevronKanan, IkonGoogle, IkonKeluar, IkonPanahKanan } from "../../components/Ikon";
+import { IkonChevronKanan, IkonKeluar, IkonPanahKanan } from "../../components/Ikon";
 
 const SUDAH_BAYAR = ["lunas", "diproses", "selesai"];
 
@@ -62,14 +63,7 @@ export default function PesananSaya() {
           <p className="mt-1 text-sm text-stone-500">
             Semua pesanan dan status bayarnya tersimpan di akun Google-mu.
           </p>
-          <button
-            type="button"
-            onClick={() => masukGoogle("/pesanan")}
-            className="mt-5 inline-flex h-12 w-full items-center justify-center gap-3 rounded-full border border-stone-200 bg-white font-bold shadow-sm transition active:scale-[0.98]"
-          >
-            <IkonGoogle className="h-5 w-5" />
-            Masuk dengan Google
-          </button>
+          <TombolGoogle kembaliKe="/pesanan" className="mt-5" />
           <p className="mt-2 text-xs text-stone-400">Dengan masuk, kamu setuju dengan <Link href="/privasi" className="underline underline-offset-2">Kebijakan Privasi</Link>.</p>
         </div>
       </main>

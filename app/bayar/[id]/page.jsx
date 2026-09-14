@@ -4,7 +4,8 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { rupiah, supabase } from "../../../lib/supabase";
-import { fetchAuth, masukGoogle, useSesi } from "../../../lib/auth";
+import { fetchAuth, useSesi } from "../../../lib/auth";
+import TombolGoogle from "../../../components/TombolGoogle";
 import { KONTAK_WA } from "../../../lib/toko";
 import { CaraPesan, FooterWa, HeaderHalaman, InfoAntar, Logo } from "../../../components/Brand";
 import {
@@ -19,7 +20,6 @@ import {
   IkonUnggah,
   IkonAkun,
   IkonChevronKanan,
-  IkonGoogle,
 } from "../../../components/Ikon";
 
 const POLL_MS = 4000;
@@ -117,19 +117,6 @@ function LinkPesananSaya() {
       </span>
       <IkonChevronKanan className="h-5 w-5 shrink-0 text-brand-400" />
     </Link>
-  );
-}
-
-function TombolGoogle({ kembaliKe, className = "" }) {
-  return (
-    <button
-      type="button"
-      onClick={() => masukGoogle(kembaliKe)}
-      className={`inline-flex h-12 items-center justify-center gap-3 rounded-full border border-stone-200 bg-white px-6 font-bold shadow-sm transition active:scale-[0.98] ${className}`}
-    >
-      <IkonGoogle className="h-5 w-5" />
-      Masuk dengan Google
-    </button>
   );
 }
 

@@ -5,9 +5,10 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase, rupiah } from "../../lib/supabase";
 import { useCart } from "../../lib/cart";
-import { fetchAuth, keluar, masukGoogle, namaAkun, useSesi } from "../../lib/auth";
+import { fetchAuth, keluar, namaAkun, useSesi } from "../../lib/auth";
+import TombolGoogle from "../../components/TombolGoogle";
 import { FooterWa, HeaderHalaman, InfoAntar, Logo, Stepper } from "../../components/Brand";
-import { IkonBulan, IkonGoogle, IkonKalender, IkonPanahKanan, IkonSampah, IkonSilang } from "../../components/Ikon";
+import { IkonBulan, IkonKalender, IkonPanahKanan, IkonSampah, IkonSilang } from "../../components/Ikon";
 
 export default function Keranjang() {
   const { list, setQty, totalQty, totalPrice, clear } = useCart();
@@ -177,14 +178,7 @@ export default function Keranjang() {
               <p className="mt-1 text-sm text-stone-500">
                 Pesananmu tersimpan di akunmu — bisa bayar sekarang atau nanti, dan cek statusnya kapan saja.
               </p>
-              <button
-                type="button"
-                onClick={() => masukGoogle("/keranjang")}
-                className="mt-4 inline-flex h-12 w-full items-center justify-center gap-3 rounded-full border border-stone-200 bg-white font-bold shadow-sm transition active:scale-[0.98]"
-              >
-                <IkonGoogle className="h-5 w-5" />
-                Masuk dengan Google
-              </button>
+              <TombolGoogle kembaliKe="/keranjang" className="mt-4" />
               <p className="mt-2 text-xs text-stone-400">
                 Tenang, isi keranjangmu nggak hilang. Dengan masuk, kamu setuju dengan {" "}
                 <Link href="/privasi" className="underline underline-offset-2">Kebijakan Privasi</Link>.
