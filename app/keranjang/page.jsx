@@ -5,8 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase, rupiah } from "../../lib/supabase";
 import { useCart } from "../../lib/cart";
+import { fetchAuth, keluar, masukGoogle, namaAkun, useSesi } from "../../lib/auth";
 import { FooterWa, HeaderHalaman, InfoAntar, Logo, Stepper } from "../../components/Brand";
-import { IkonBulan, IkonKalender, IkonPanahKanan, IkonSampah, IkonSilang } from "../../components/Ikon";
+import { IkonBulan, IkonGoogle, IkonKalender, IkonPanahKanan, IkonSampah, IkonSilang } from "../../components/Ikon";
 
 export default function Keranjang() {
   const { list, setQty, totalQty, totalPrice, clear } = useCart();
@@ -17,6 +18,17 @@ export default function Keranjang() {
   const [error, setError] = useState("");
   const [batch, setBatch] = useState(undefined); // undefined = belum dicek
   const router = useRouter();
+  const sesi = useSesi();
+
+  // Isi otomatis dari akun Google & nomor WA yang terakhir dipakai di HP ini
+  useEffect(() => {
+    if (!sesi) return;
+    setNama((n) => n || namaAkun(sesi.user));
+    try {
+      const w = localStorage.getItem("kripik-wa");
+      if (w) setWa((x) => x || w);
+    } catch {}
+  }, [sesi]);
 
   useEffect(() => {
     (async () => {
@@ -38,7 +50,7 @@ export default function Keranjang() {
     try {
       // Total dihitung ulang di server dari harga database,
       // jadi angka di layar ini murni buat ditampilkan.
-      const res = await fetch("/api/pesanan", {
+      const res = await fetchAuth("/api/pesanan", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -51,11 +63,14 @@ export default function Keranjang() {
       const data = await res.json();
 
       if (!res.ok) {
-        setError(data?.error || "Gagal membuat pesanan.");
+        setError(res.status === 401 ? "Sesi login habis, masuk lagi ya." : data?.error || "Gagal membuat pesanan.");
         setSaving(false);
         return;
       }
 
+      try {
+        localStorage.setItem("kripik-wa", wa.trim());
+      } catch {}
       clear();
       router.push(`/bayar/${data.id}`);
     } catch {
@@ -153,10 +168,37 @@ export default function Keranjang() {
             </div>
           </div>
 
+          {sesi === null ? (
+            <div className="kartu mx-4 mt-4 p-5 text-center">
+              <p className="text-lg font-extrabold">Masuk dulu buat pesan</p>
+              <p className="mt-1 text-sm text-stone-500">
+                Pesananmu tersimpan di akunmu — bisa bayar sekarang atau nanti, dan cek statusnya kapan saja.
+              </p>
+              <button
+                type="button"
+                onClick={() => masukGoogle("/keranjang")}
+                className="mt-4 inline-flex h-12 w-full items-center justify-center gap-3 rounded-full border border-stone-200 bg-white font-bold shadow-sm transition active:scale-[0.98]"
+              >
+                <IkonGoogle className="h-5 w-5" />
+                Masuk dengan Google
+              </button>
+              <p className="mt-2 text-xs text-stone-400">Tenang, isi keranjangmu nggak hilang.</p>
+            </div>
+          ) : sesi === undefined ? (
+            <div className="kartu mx-4 mt-4 h-40 animate-pulse" />
+          ) : (
           <form onSubmit={submit} className="kartu mx-4 mt-4 space-y-4 p-4">
             <div>
               <p className="font-extrabold">Data pemesan</p>
               <p className="text-xs text-stone-500">Buat konfirmasi pesanan lewat WhatsApp.</p>
+              <p className="mt-2 flex items-center justify-between gap-2 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">
+                <span className="truncate">
+                  Masuk sebagai <b>{sesi.user.email}</b>
+                </span>
+                <button type="button" onClick={keluar} className="shrink-0 font-semibold text-brand-600 underline">
+                  Ganti akun
+                </button>
+              </p>
             </div>
 
             <div className="space-y-1.5">
@@ -225,9 +267,10 @@ export default function Keranjang() {
               )}
             </button>
             <p className="text-center text-xs text-stone-500">
-              Setelah ini kamu langsung diarahkan ke halaman bayar QRIS.
+              Bayar sekarang atau nanti — pesananmu tersimpan di menu Pesanan Saya.
             </p>
           </form>
+          )}
         </>
       )}
 

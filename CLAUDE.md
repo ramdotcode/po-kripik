@@ -10,27 +10,32 @@ Pesanan dikelompokkan per **batch PO** yang dibuka/ditutup dari halaman admin.
   - `lib/supabase.js` — client browser (anon key)
   - `lib/supabase-server.js` — client server (service role key, bypass RLS). JANGAN diimport dari komponen `"use client"`.
 - Auth admin: Supabase Auth email+password, dicek ke tabel `admins`
+- Auth pembeli: Supabase Auth **Google** (`lib/auth.js`: `masukGoogle`, `useSesi`, `fetchAuth`, `namaAkun`). Wajib login sebelum pesan.
+  Route API memverifikasi token lewat `lib/auth-server.js` (`userDariRequest`) — jangan percaya user_id dari browser
 - State keranjang: React Context + localStorage (`lib/cart.js`)
-- Pembayaran: **QRIS lewat Midtrans Snap** (`lib/midtrans.js`, server-only) kalau `MIDTRANS_SERVER_KEY` diisi.
+- Pembayaran SEKARANG: **manual** — QRIS statis yang diupload admin (bucket publik `toko`, URL di `settings.qris_url`) → pembeli upload foto bukti → admin ACC/Tolak. Boleh bayar belakangan.
+- QRIS otomatis **Midtrans Snap** (`lib/midtrans.js`, server-only) DISEMBUNYIKAN: aktif cuma kalau `QRIS_OTOMATIS=true` DAN `MIDTRANS_SERVER_KEY` diisi.
   Bukan Core API: Core API belum diaktifkan Midtrans di akun ini (semua charge 402 "Payment channel is not activated"), Snap aktif.
-  Kalau kosong/placeholder → fallback QRIS statis (`public/qris.png`) + upload bukti ke bucket `bukti` (privat)
+  Kalau mati → jalur manual di atas; bukti ke bucket `bukti` (privat). `public/qris.png` sudah tidak dipakai
 - Pola Midtrans mengikuti project `../elevra-grad-main` (supabase/functions/midtrans-payment & midtrans-callback)
 - Tanpa ongkir — total = harga × qty saja. Fee MDR TIDAK dibebankan ke pembeli
 - Pengantaran KHUSUS ke Capital Place (tulis "Capital Place" saja, tanpa "Indosat") (`LOKASI_ANTAR` di `lib/toko.js`) — tampil di katalog (bawah hero), kotak total keranjang, ringkasan bayar (`InfoAntar`), dan meta description
 
 ## Halaman
 - `/` — katalog (`products` aktif) + banner batch. Kalau tidak ada batch `status='buka'`: tombol pesan mati, gambar grayscale, keranjang otomatis dikosongkan
-- `/keranjang` — edit qty, form nama + no WA + catatan → POST `/api/pesanan` → redirect ke `/bayar/[id]`
+- `/keranjang` — edit qty; belum login → tombol "Masuk dengan Google" (balik ke /keranjang, isi keranjang tetap); sudah login → form (nama dari Google, WA diingat di localStorage `kripik-wa`) → POST `/api/pesanan` pakai `fetchAuth` → `/bayar/[id]`
 - `/bayar/[id]` — GET `/api/pesanan/[id]` (field `bayar_otomatis` menentukan mode):
   - otomatis: POST `/api/pesanan/[id]/qris` → tombol "Bayar dengan QRIS" ke halaman Snap (`pay_url`) + countdown; polling GET `/qris` tiap 4 detik, langsung cek saat pembeli balik dari Snap
-  - manual: gambar QRIS statis + upload bukti → POST `/api/pesanan/[id]/bukti`
+  - manual (default): QRIS dari `settings.qris_url` + "Sudah Bayar? Upload Bukti" → POST `/api/pesanan/[id]/bukti`; "Bayar nanti aja" → `/pesanan`; alasan tolak admin (`bukti_ditolak`) tampil; saat `menunggu_konfirmasi` bisa "Ganti foto bukti"
+  - pesanan milik akun & belum login → layar "Masuk dulu" (API balas 401 `perlu_login`)
+- `/pesanan` — Pesanan Saya (baca langsung via RLS `pesanan baca pemilik`). Label pembeli: Belum bayar / Bukti dicek / Bukti ditolak / Sudah bayar / Diproses / Selesai / Dibatalkan
 - `/admin` — login Supabase Auth. 4 tab: Pesanan (filter batch, ubah status, link WA, signed URL bukti, badge lunas otomatis), Batch (CRUD + buka/tutup), Produk (harga, aktif), Ekspor (CSV)
 
 ## Route API (server-side, service role)
 Ada karena RLS menutup akses anon ke `orders`/`order_items`.
-- `POST /api/pesanan` — validasi input, cek ada batch buka, **hitung ulang total dari harga di DB** (jangan percaya harga dari browser), insert order + items. Rollback order kalau insert item gagal.
-- `GET /api/pesanan/[id]` — detail satu pesanan buat halaman bayar. Nomor WA sengaja tidak dikirim balik.
-- `POST /api/pesanan/[id]/bukti` — upload multipart, maks 5 MB, whitelist jpg/png/webp/heic. Simpan **path**-nya ke `orders.payment_proof_url`.
+- `POST /api/pesanan` — WAJIB login Google (401 tanpa token valid). Validasi input, cek ada batch buka, **hitung ulang total dari harga di DB** (jangan percaya harga dari browser), insert order (+ `user_id`, `customer_email`) + items. Rollback order kalau insert item gagal.
+- `GET /api/pesanan/[id]` — detail satu pesanan buat halaman bayar. Nomor WA sengaja tidak dikirim balik. Pesanan ber-`user_id` cuma untuk pemiliknya (tanpa login → 401 `perlu_login`, akun lain → 404); pesanan lama tanpa akun tetap bisa lewat link.
+- `POST /api/pesanan/[id]/bukti` — upload multipart, maks 5 MB, whitelist jpg/png/webp/heic. Simpan **path**-nya ke `orders.payment_proof_url`, status → `menunggu_konfirmasi`, kosongkan `proof_note`. Pemilik saja; boleh upload ulang; ditolak kalau sudah dibayar/batal.
 - `POST /api/pesanan/[id]/qris` — bikin transaksi Snap (`enabled_payments: ["other_qris"]`, expiry 30 menit, `callbacks.finish` → `/bayar/[id]`). Link bayar di `payment_intents.payload.redirect_url`. Kalau intent terakhir masih pending & sisa > 1 menit, kembalikan yang lama (reload ≠ transaksi baru).
 - `GET /api/pesanan/[id]/qris` — status buat polling. Kalau pending & `checked_at` > 8 detik lalu, tanya Midtrans langsung (cadangan kalau webhook gagal/localhost).
 - `POST /api/midtrans/notifikasi` — webhook. Verifikasi signature → lookup `payment_intents.order_ref` → **ambil ulang status dari API Midtrans** → `applyStatus`. Error sementara dibalas 503 (Midtrans retry 4x). order_ref tak dikenal → 200 (abaikan).
@@ -50,6 +55,7 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - `supabase/migration-midtrans.sql` — `payment_intents`, `orders.paid_at`, `orders.paid_via`
 - Ketiga file WAJIB dijalankan urut — kode membaca kolom dari semuanya
 - `supabase/migration-menu-poster.sql` — `products.weight`, `badge` (FAVORIT/BARU), `sort_order` (urutan poster). Opsional: tanpa ini web tetap jalan, berat/badge tidak tampil & katalog urut abjad
+- `supabase/migration-login-bayar-manual.sql` — WAJIB: `orders.user_id` / `customer_email` / `proof_note`; RLS pembeli baca pesanan & item miliknya; tabel `settings` (key/value, baca publik, tulis admin); bucket publik `toko` (upload/hapus admin)
 - `batches`: id, name, status (`buka`/`tutup`), note, created_at, closed_at
   - Unique index parsial `batches_hanya_satu_buka` → cuma boleh SATU batch `status='buka'`
   - Karena itu, membuka batch harus menutup yang lain dulu (lihat `components/admin/Batches.jsx`)
@@ -57,6 +63,8 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - `payment_intents`: order_ref (PK), order_id, amount, status (transaction_status Midtrans terakhir), qr_url, expiry_time, payload, notif, checked_at, paid_at. RLS: admin baca; insert/update/delete dikunci policy RESTRICTIVE (server only)
 - `admins`: user_id (FK auth.users), email. Helper `public.is_admin()` dipakai semua policy RLS
 - Status pesanan: baru → menunggu_konfirmasi → lunas → diproses → selesai / batal. Dianggap sudah bayar: `paid_at` terisi ATAU status lunas/diproses/selesai
+  - Label admin: `baru` = Belum Bayar, `lunas` = Sudah Bayar. ACC = set `lunas`. Tolak = `baru` + `proof_note` (alasan) + `payment_proof_url` null
+  - Admin ubah status ke lunas/diproses/selesai → `paid_at` diisi (`paid_via` manual); balik ke baru/menunggu → `paid_at` dikosongkan (kecuali dari midtrans)
 - RLS: `products`/`batches` boleh dibaca publik, tulis khusus admin. `orders`/`order_items` admin only
 - Bucket `bukti` privat — admin baca lewat `createSignedUrl` (5 menit)
 - Foto produk: file lokal di `public/produk/*.jpg`, image_url berisi path relatif `/produk/...`
@@ -72,7 +80,8 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - `.env.local`: service role key & Midtrans Server Key SANDBOX terisi (akun Midtrans baru, merchant "ramcode"; key sandbox tanpa awalan `SB-`)
 - Alur Snap end-to-end SUDAH lolos di sandbox (2026-09-14): sesi bayar → simulator QRIS → polling & webhook → pesanan lunas, idempoten, signature palsu ditolak
 - Di web live juga terbukti: webhook (header `X-Override-Notification`) sampai & menandai lunas TANPA polling. Settlement sandbox kadang telat beberapa menit setelah simulator bilang PAID
-- Midtrans production BELUM diaktivasi — link untuk form aktivasi: https://kripik.ramcode.site
+- Midtrans production BELUM diaktivasi — link untuk form aktivasi: https://kripik.ramcode.site. Sampai aktif, QRIS otomatis disembunyikan (`QRIS_OTOMATIS` jangan diisi di Vercel)
+- Login Google + bayar manual SUDAH dikodekan: `migration-login-bayar-manual.sql` BELUM dijalankan & provider Google BELUM aktif di Supabase (per 2026-09-14). Tanpa migrasi, halaman bayar & pembuatan pesanan gagal — jangan push/deploy sebelum migrasi jalan
 - GitHub: `ramdotcode/po-kripik` (PUBLIK). Push via SSH alias `github.com-ramdotcode`; identitas git lokal ramdotcode <ramdotcode@gmail.com>
 - LIVE di https://kripik.ramcode.site — Vercel project `po-kripik` (preset Next.js, deploy otomatis dari push ke `main`, env lengkap). DNS Cloudflare: CNAME → Vercel, DNS only
 - Region: Supabase di AWS **ap-southeast-2 (Sydney)** → Vercel Function Region di-set **syd1**. Request pesanan ~0,4–0,9 dtk (dulu iad1 1–2 dtk, sin1 ~1,2 dtk)

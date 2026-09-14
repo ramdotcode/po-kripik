@@ -8,11 +8,13 @@ import Orders from "../../components/admin/Orders";
 import Products from "../../components/admin/Products";
 import Batches from "../../components/admin/Batches";
 import Export from "../../components/admin/Export";
+import Qris from "../../components/admin/Qris";
 
 const TABS = [
   ["pesanan", "Pesanan"],
   ["batch", "Batch"],
   ["produk", "Produk"],
+  ["qris", "QRIS"],
   ["ekspor", "Ekspor"],
 ];
 
@@ -215,7 +217,7 @@ export default function Admin() {
         <nav
           role="tablist"
           aria-label="Menu admin"
-          className="mt-3 grid grid-cols-4 gap-1 rounded-full border border-brand-100 bg-white p-1 shadow-sm"
+          className="mt-3 grid grid-cols-5 gap-1 rounded-full border border-brand-100 bg-white p-1 shadow-sm"
         >
           {TABS.map(([id, label]) => (
             <button
@@ -224,7 +226,7 @@ export default function Admin() {
               role="tab"
               aria-selected={tab === id}
               onClick={() => setTab(id)}
-              className={`h-9 rounded-full text-[13px] font-bold transition ${
+              className={`h-9 rounded-full text-[12px] font-bold transition ${
                 tab === id
                   ? "bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-sm"
                   : "text-coklat-700 hover:bg-brand-50"
@@ -239,6 +241,7 @@ export default function Admin() {
       {tab === "pesanan" && <Orders batches={batches} />}
       {tab === "batch" && <Batches batches={batches} reload={reloadBatches} />}
       {tab === "produk" && <Products />}
+      {tab === "qris" && <Qris />}
       {tab === "ekspor" && <Export batches={batches} />}
     </main>
   );

@@ -16,9 +16,9 @@ import {
 
 const STATUSES = ["baru", "menunggu_konfirmasi", "lunas", "diproses", "selesai", "batal"];
 const STATUS = {
-  baru: ["Baru", "bg-brand-100 text-brand-700"],
+  baru: ["Belum Bayar", "bg-brand-100 text-brand-700"],
   menunggu_konfirmasi: ["Cek Bukti", "bg-amber-100 text-amber-800"],
-  lunas: ["Lunas", "bg-green-100 text-green-700"],
+  lunas: ["Sudah Bayar", "bg-green-100 text-green-700"],
   diproses: ["Diproses", "bg-sky-100 text-sky-800"],
   selesai: ["Selesai", "bg-green-600 text-white"],
   batal: ["Batal", "bg-stone-200 text-stone-500"],
@@ -28,9 +28,11 @@ const SUDAH_BAYAR = ["lunas", "diproses", "selesai"];
 const sudahBayar = (o) => Boolean(o.paid_at) || SUDAH_BAYAR.includes(o.status);
 const kodeOf = (o) => String(o.id).slice(0, 8);
 const jumlahkan = (os) => os.reduce((s, o) => s + (o.total || 0), 0);
+const TOMBOL_TOLAK =
+  "inline-flex items-center justify-center gap-2 rounded-full bg-red-50 text-sm font-bold text-red-700 ring-1 ring-red-200 transition active:scale-[0.98]";
 
 // Pratinjau bukti transfer. Bucket 'bukti' privat, jadi pakai link sementara (5 menit).
-function ModalBukti({ order, onTutup, onLunas }) {
+function ModalBukti({ order, onTutup, onLunas, onTolak }) {
   const [url, setUrl] = useState(null);
   const [err, setErr] = useState("");
 
@@ -101,10 +103,16 @@ function ModalBukti({ order, onTutup, onLunas }) {
             </a>
           )}
           {order.status === "menunggu_konfirmasi" && (
-            <button type="button" onClick={onLunas} className="btn-oranye h-11 flex-1 text-sm">
-              <IkonCentang className="h-4 w-4" strokeWidth={2.6} />
-              Tandai Lunas
-            </button>
+            <>
+              <button type="button" onClick={onTolak} className={`${TOMBOL_TOLAK} h-11 flex-1`}>
+                <IkonTutup className="h-4 w-4" />
+                Tolak
+              </button>
+              <button type="button" onClick={onLunas} className="btn-oranye h-11 flex-1 text-sm">
+                <IkonCentang className="h-4 w-4" strokeWidth={2.6} />
+                ACC
+              </button>
+            </>
           )}
         </div>
       </div>
@@ -121,6 +129,8 @@ function BadgeBayar({ o }) {
       ? ["Sudah dibayar", "bg-green-100 text-green-700"]
       : o.status === "menunggu_konfirmasi"
       ? ["Bukti masuk", "bg-amber-100 text-amber-800"]
+      : o.proof_note
+      ? ["Bukti ditolak", "bg-red-50 text-red-700"]
       : ["Belum bayar", "bg-stone-100 text-stone-500"];
   return <span className={`inline-flex h-8 items-center rounded-full px-3 text-xs font-bold ${warna}`}>{teks}</span>;
 }
@@ -153,13 +163,41 @@ export default function Orders({ batches }) {
     if (!o || o.status === baru) return;
     if (baru === "batal" && !window.confirm(`Batalkan pesanan ${o.customer_name} (#${kodeOf(o)})?`)) return;
 
-    setOrders((os) => os.map((x) => (x.id === id ? { ...x, status: baru } : x)));
+    // "Sudah bayar" dicatat di paid_at biar ringkasan, ekspor, & halaman pembeli ikut benar
+    const patch = { status: baru };
+    if (SUDAH_BAYAR.includes(baru) && !o.paid_at)
+      Object.assign(patch, { paid_at: new Date().toISOString(), paid_via: "manual", proof_note: null });
+    if (["baru", "menunggu_konfirmasi"].includes(baru) && o.paid_at && o.paid_via !== "midtrans")
+      Object.assign(patch, { paid_at: null, paid_via: null });
+    return simpanPatch(o, patch);
+  };
+
+  // Tolak bukti: balik ke "Belum Bayar", alasannya tampil di halaman pembeli, pembeli upload ulang
+  const tolak = (o) => {
+    const alasan = window.prompt(
+      `Alasan bukti ${o.customer_name} (#${kodeOf(o)}) ditolak — dibaca pembeli:`,
+      "Nominal belum sesuai"
+    );
+    if (alasan === null) return;
+    return simpanPatch(o, {
+      status: "baru",
+      proof_note: alasan.trim() || "Bukti belum sesuai",
+      payment_proof_url: null,
+      paid_at: null,
+      paid_via: null,
+    });
+  };
+
+  // Simpan langsung di layar, balikkan kalau gagal
+  const simpanPatch = async (o, patch) => {
+    const id = o.id;
+    setOrders((os) => os.map((x) => (x.id === id ? { ...x, ...patch } : x)));
     setSimpan((s) => ({ ...s, [id]: "…" }));
-    const { error } = await supabase.from("orders").update({ status: baru }).eq("id", id);
+    const { error } = await supabase.from("orders").update(patch).eq("id", id);
     if (error) {
-      setOrders((os) => os.map((x) => (x.id === id ? { ...x, status: o.status } : x)));
+      setOrders((os) => os.map((x) => (x.id === id ? o : x)));
       setSimpan((s) => ({ ...s, [id]: null }));
-      return alert("Gagal menyimpan status: " + error.message);
+      return alert("Gagal menyimpan: " + error.message);
     }
     setSimpan((s) => ({ ...s, [id]: "ok" }));
     setTimeout(() => setSimpan((s) => (s[id] === "ok" ? { ...s, [id]: null } : s)), 1500);
@@ -319,6 +357,7 @@ export default function Orders({ batches }) {
                           })}{" "}
                           · {batchName(o.batch_id)}
                         </p>
+                        {o.customer_email && <p className="truncate text-xs text-stone-400">{o.customer_email}</p>}
                       </div>
                       <p className="shrink-0 text-lg font-extrabold tabular-nums text-brand-700">{rupiah(o.total)}</p>
                     </div>
@@ -352,6 +391,12 @@ export default function Orders({ batches }) {
                       </p>
                     )}
 
+                    {o.status === "baru" && o.proof_note && (
+                      <p className="mt-2 rounded-2xl bg-red-50 px-3 py-2 text-xs text-red-700">
+                        Bukti ditolak: {o.proof_note}
+                      </p>
+                    )}
+
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <label className="relative min-w-[9rem] flex-1">
                         <span className="sr-only">Status pesanan {o.customer_name}</span>
@@ -375,14 +420,20 @@ export default function Orders({ batches }) {
                         </button>
                       )}
                       {o.status === "menunggu_konfirmasi" && (
-                        <button
-                          type="button"
-                          onClick={() => setStatus(o.id, "lunas")}
-                          className="btn-oranye h-10 px-4 text-sm"
-                        >
-                          <IkonCentang className="h-4 w-4" strokeWidth={2.6} />
-                          Tandai Lunas
-                        </button>
+                        <>
+                          <button type="button" onClick={() => tolak(o)} className={`${TOMBOL_TOLAK} h-10 px-4`}>
+                            <IkonTutup className="h-4 w-4" />
+                            Tolak
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => setStatus(o.id, "lunas")}
+                            className="btn-oranye h-10 px-4 text-sm"
+                          >
+                            <IkonCentang className="h-4 w-4" strokeWidth={2.6} />
+                            ACC
+                          </button>
+                        </>
                       )}
                     </div>
                     {simpan[o.id] && (
@@ -411,6 +462,10 @@ export default function Orders({ batches }) {
           onTutup={() => setBukti(null)}
           onLunas={() => {
             setStatus(bukti.id, "lunas");
+            setBukti(null);
+          }}
+          onTolak={() => {
+            tolak(bukti);
             setBukti(null);
           }}
         />

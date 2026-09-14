@@ -16,6 +16,8 @@ import {
   IkonPin,
   IkonToa,
   IkonWhatsApp,
+  IkonAkun,
+  IkonChevronKanan,
 } from "../components/Ikon";
 
 // Urutan poster (sort_order) dulu; yang belum punya urutan di belakang, urut abjad.
@@ -196,6 +198,16 @@ export default function Katalog() {
           Chat Kami
         </a>
       </header>
+
+      <Link
+        href="/pesanan"
+        className="mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white/90 px-4 py-2.5 text-sm shadow-sm"
+      >
+        <IkonAkun className="h-5 w-5 shrink-0 text-brand-600" />
+        <span className="flex-1 font-semibold">Pesanan Saya</span>
+        <span className="text-xs text-stone-500">cek status & bayar</span>
+        <IkonChevronKanan className="h-4 w-4 shrink-0 text-brand-400" />
+      </Link>
 
       <HeroBatch batch={batch} loading={loading} />
 

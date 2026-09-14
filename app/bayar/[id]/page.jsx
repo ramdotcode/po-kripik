@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { rupiah } from "../../../lib/supabase";
+import { rupiah, supabase } from "../../../lib/supabase";
+import { fetchAuth, masukGoogle, useSesi } from "../../../lib/auth";
 import { KONTAK_WA } from "../../../lib/toko";
 import { CaraPesan, FooterWa, HeaderHalaman, InfoAntar, Logo } from "../../../components/Brand";
 import {
@@ -16,6 +17,9 @@ import {
   IkonSalin,
   IkonSilang,
   IkonUnggah,
+  IkonAkun,
+  IkonChevronKanan,
+  IkonGoogle,
 } from "../../../components/Ikon";
 
 const POLL_MS = 4000;
@@ -100,6 +104,35 @@ function SalinLink() {
   );
 }
 
+// Pesanan milik akun: jalan balik ke pesanan lewat menu Pesanan Saya, bukan simpan link.
+function LinkPesananSaya() {
+  return (
+    <Link href="/pesanan" className="kartu mx-4 mt-4 flex items-center gap-3 p-4">
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-600">
+        <IkonAkun className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-bold">Pesanan Saya</span>
+        <span className="block text-xs text-stone-500">Semua pesananmu & status bayarnya ada di sini.</span>
+      </span>
+      <IkonChevronKanan className="h-5 w-5 shrink-0 text-brand-400" />
+    </Link>
+  );
+}
+
+function TombolGoogle({ kembaliKe, className = "" }) {
+  return (
+    <button
+      type="button"
+      onClick={() => masukGoogle(kembaliKe)}
+      className={`inline-flex h-12 items-center justify-center gap-3 rounded-full border border-stone-200 bg-white px-6 font-bold shadow-sm transition active:scale-[0.98] ${className}`}
+    >
+      <IkonGoogle className="h-5 w-5" />
+      Masuk dengan Google
+    </button>
+  );
+}
+
 export default function Bayar() {
   const { id } = useParams();
   const [order, setOrder] = useState(null);
@@ -113,19 +146,38 @@ export default function Bayar() {
   const [qrLoading, setQrLoading] = useState(false);
   const [qrHabis, setQrHabis] = useState(false);
 
+  const sesi = useSesi();
+  const uid = sesi === undefined ? undefined : sesi?.user?.id || null;
+  const [perluLogin, setPerluLogin] = useState(false);
+  const [qrisUrl, setQrisUrl] = useState(undefined); // gambar QRIS statis dari admin
+
+  // Pesanan milik akun cuma bisa dibuka pemiliknya -> tunggu status login dulu,
+  // lalu ambil ulang kalau akunnya berubah (mis. baru balik dari login Google).
   useEffect(() => {
+    if (uid === undefined) return;
     (async () => {
+      setLoading(true);
       try {
-        const res = await fetch(`/api/pesanan/${id}`, { cache: "no-store" });
+        const res = await fetchAuth(`/api/pesanan/${id}`, { cache: "no-store" });
+        const data = await res.json().catch(() => ({}));
+        setPerluLogin(res.status === 401);
         if (res.ok) {
-          const data = await res.json();
           setOrder(data.order);
           setItems(data.items || []);
-        }
+        } else setOrder(null);
       } catch {}
       setLoading(false);
     })();
-  }, [id]);
+  }, [id, uid]);
+
+  useEffect(() => {
+    supabase
+      .from("settings")
+      .select("value")
+      .eq("key", "qris_url")
+      .maybeSingle()
+      .then(({ data }) => setQrisUrl(data?.value || null));
+  }, []);
 
   const tandaiLunas = () => setOrder((o) => ({ ...o, sudah_bayar: true }));
 
@@ -184,10 +236,10 @@ export default function Bayar() {
     try {
       const form = new FormData();
       form.append("file", file);
-      const res = await fetch(`/api/pesanan/${id}/bukti`, { method: "POST", body: form });
+      const res = await fetchAuth(`/api/pesanan/${id}/bukti`, { method: "POST", body: form });
       const data = await res.json();
       if (!res.ok) setError(data?.error || "Gagal upload bukti.");
-      else setOrder((o) => ({ ...o, sudah_upload: true, status: data.status }));
+      else setOrder((o) => ({ ...o, sudah_upload: true, status: data.status, bukti_ditolak: null }));
     } catch {
       setError("Gagal upload. Cek koneksi internetmu.");
     }
@@ -204,12 +256,25 @@ export default function Bayar() {
       </main>
     );
 
+  if (!order && perluLogin)
+    return (
+      <main className="px-6 pt-20 text-center">
+        <Logo className="mx-auto h-20 w-20" />
+        <p className="mt-4 text-lg font-extrabold">Masuk dulu ya</p>
+        <p className="mt-1 text-sm text-stone-500">
+          Pesanan ini tersimpan di akun Google yang dipakai waktu memesan.
+        </p>
+        <TombolGoogle kembaliKe={`/bayar/${id}`} className="mt-5" />
+        <FooterWa className="pt-8" teks="Butuh bantuan? WhatsApp" pesan="Halo, aku nggak bisa buka pesananku" />
+      </main>
+    );
+
   if (!order)
     return (
       <main className="px-6 pt-20 text-center">
         <Logo className="mx-auto h-20 w-20 grayscale" />
         <p className="mt-4 text-lg font-extrabold">Pesanan tidak ditemukan</p>
-        <p className="mt-1 text-sm text-stone-500">Cek lagi link-nya, atau tanya kami lewat WhatsApp.</p>
+        <p className="mt-1 text-sm text-stone-500">Cek lagi link-nya, atau pastikan kamu masuk dengan akun yang dipakai waktu memesan.</p>
         <Link href="/" className="btn-oranye mt-5 h-12 px-6">
           <IkonPanahKiri className="h-4 w-4" strokeWidth={2.5} />
           Kembali ke katalog
@@ -226,7 +291,11 @@ export default function Bayar() {
     ? "pesanan ini sudah dibatalkan."
     : order.sudah_upload && !order.bayar_otomatis
     ? "buktimu lagi kami cek."
-    : "tinggal bayar pakai QRIS ya.";
+    : order.bukti_ditolak
+    ? "buktimu belum bisa kami terima, cek alasannya di bawah ya."
+    : order.bayar_otomatis
+    ? "tinggal bayar pakai QRIS ya."
+    : "pesananmu sudah tercatat. Bayar sekarang atau nanti, bebas.";
 
   let bagianBayar;
   if (order.sudah_bayar) {
@@ -312,21 +381,56 @@ export default function Bayar() {
       </>
     );
   } else if (order.sudah_upload) {
+    // Bukti sudah dikirim, tinggal nunggu admin ACC / tolak
     bagianBayar = (
-      <Selesai
-        judul="Bukti pembayaran diterima!"
-        pesan="Pesananmu sedang kami cek. Kami hubungi via WhatsApp ya."
-      />
+      <div className="kartu p-6 text-center">
+        <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-amber-100 text-amber-700 ring-8 ring-amber-50">
+          <IkonJam className="h-8 w-8" />
+        </span>
+        <p className="mt-4 text-xl font-extrabold">Bukti lagi dicek admin</p>
+        <p className="mt-1 text-sm text-stone-600">
+          Kalau sudah di-ACC, status pesananmu jadi <b>Sudah bayar</b>. Kami kabari juga lewat WhatsApp.
+        </p>
+        <label
+          aria-disabled={uploading || undefined}
+          className={`btn-lembut mt-5 h-11 cursor-pointer px-5 text-sm ${uploading ? "pointer-events-none opacity-60" : ""}`}
+        >
+          <IkonUnggah className="h-4 w-4" />
+          {uploading ? "Mengupload…" : "Ganti foto bukti"}
+          <input type="file" accept="image/*" onChange={uploadProof} disabled={uploading} className="hidden" />
+        </label>
+        {error && (
+          <p role="alert" className="mt-3 text-sm text-red-700">
+            {error}
+          </p>
+        )}
+      </div>
     );
   } else {
-    // ---------- QRIS statis + upload bukti (Midtrans belum diaktifkan) ----------
+    // ---------- QRIS statis dari admin + upload bukti (admin ACC / tolak) ----------
     bagianBayar = (
       <>
+        {order.bukti_ditolak && (
+          <div role="alert" className="mb-3 flex items-start gap-2 rounded-2xl bg-red-50 px-4 py-3 text-sm text-red-800">
+            <IkonSilang className="mt-0.5 h-4 w-4 shrink-0" />
+            <span>
+              <b>Bukti sebelumnya ditolak:</b> {order.bukti_ditolak}. Cek lagi lalu upload ulang ya.
+            </span>
+          </div>
+        )}
         <div className="kartu p-5 text-center">
           <Nominal label="Scan QRIS di bawah & bayar" jumlah={order.total} />
           <div className="mx-auto mt-4 w-full max-w-xs rounded-3xl border-2 border-dashed border-brand-200 bg-white p-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/qris.png" alt="QRIS toko" className="w-full rounded-2xl" />
+            {qrisUrl === undefined ? (
+              <div className="aspect-square w-full animate-pulse rounded-2xl bg-brand-100" />
+            ) : qrisUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={qrisUrl} alt="QRIS toko" className="w-full rounded-2xl" />
+            ) : (
+              <p className="px-3 py-10 text-sm text-stone-500">
+                QRIS belum dipasang admin. Tanya kami lewat WhatsApp ya.
+              </p>
+            )}
           </div>
           <p className="mt-3 text-xs text-stone-500">Pastikan nominalnya pas sampai rupiah terakhir ya.</p>
         </div>
@@ -338,7 +442,7 @@ export default function Bayar() {
           }`}
         >
           <IkonUnggah className="h-5 w-5" strokeWidth={2.4} />
-          {uploading ? "Mengupload…" : "Upload Bukti Pembayaran"}
+          {uploading ? "Mengupload…" : "Sudah Bayar? Upload Bukti"}
           <input type="file" accept="image/*" onChange={uploadProof} disabled={uploading} className="hidden" />
         </label>
         {error && (
@@ -348,8 +452,13 @@ export default function Bayar() {
           </p>
         )}
         <p className="mt-2 text-center text-xs text-stone-500">
-          Screenshot bukti transfer dari aplikasi pembayaranmu (maks 5 MB)
+          Screenshot bukti dari aplikasi pembayaranmu (maks 5 MB). Admin cek dulu sebelum pesananmu diproses.
         </p>
+        {order.milik_akun && (
+          <Link href="/pesanan" className="btn-lembut mt-3 h-12 w-full text-sm">
+            Bayar nanti aja
+          </Link>
+        )}
       </>
     );
   }
@@ -396,7 +505,7 @@ export default function Bayar() {
         </div>
       </div>
 
-      <SalinLink />
+      {order.milik_akun ? <LinkPesananSaya /> : <SalinLink />}
 
       <FooterWa className="pt-6" teks="Ada kendala pembayaran? WhatsApp" pesan={`Halo, soal pesanan #${kode}`} />
     </main>

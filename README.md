@@ -12,10 +12,10 @@ bukti kalau Midtrans belum diaktifkan.
 Supabase Dashboard → **Authentication → Users → Add user**. Isi email + password,
 centang *Auto Confirm User*. Ini yang nanti dipakai login di `/admin`.
 
-Sekalian matikan pendaftaran publik: **Authentication → Providers → Email**,
-matikan *Enable signup*. Biar nggak ada orang lain yang bisa bikin akun sendiri.
+Pendaftaran publik **biarkan AKTIF** — pembeli daftar otomatis lewat Google. Akun pembeli
+nggak bisa masuk admin, karena admin dicek dari tabel `admins`.
 
-### 2. Jalankan SQL — urut (1–3 wajib)
+### 2. Jalankan SQL — urut (1–3 & 5 wajib)
 
 Buka **SQL Editor**, jalankan satu per satu:
 
@@ -26,6 +26,8 @@ Buka **SQL Editor**, jalankan satu per satu:
 3. `supabase/migration-midtrans.sql` — tabel `payment_intents` + kolom `paid_at`.
 4. `supabase/migration-menu-poster.sql` — berat, badge FAVORIT/BARU, dan urutan menu sesuai poster.
    Opsional: tanpa ini web tetap jalan, cuma berat/badge belum tampil dan menu urut abjad.
+5. `supabase/migration-login-bayar-manual.sql` — **wajib**: pesanan nempel ke akun pembeli,
+   alasan tolak bukti, tabel `settings` (gambar QRIS), bucket publik `toko`.
 
 Jangan dilompati: kode sudah membaca kolom dari ketiga file ini. Kalau yang ke-3 belum
 jalan, halaman bayar bakal bilang "Pesanan tidak ditemukan".
@@ -42,6 +44,7 @@ jalan, halaman bayar bakal bilang "Pesanan tidak ditemukan".
 | `MIDTRANS_SERVER_KEY` | Server Key | Midtrans → Settings → Access Keys |
 | `MIDTRANS_IS_PRODUCTION` | `false` buat sandbox, `true` buat uang beneran | — |
 | `MIDTRANS_NOTIFICATION_URL` | `https://domain-kamu/api/midtrans/notifikasi` | isi setelah deploy |
+| `QRIS_OTOMATIS` | **kosongkan** — QRIS dinamis disembunyikan. Isi `true` kalau Midtrans production sudah aktif | — |
 
 `SUPABASE_SERVICE_ROLE_KEY` dan `MIDTRANS_SERVER_KEY` **rahasia** — jangan di-commit,
 jangan ditempel di chat atau screenshot. Keduanya sengaja tanpa prefix `NEXT_PUBLIC_`
@@ -52,7 +55,7 @@ upload bukti (langkah 4 wajib). Begitu diisi, halaman bayar pindah ke QRIS dinam
 
 ### 4. QRIS statis & harga
 
-- Ganti `public/qris.png` dengan QRIS asli (cuma dipakai kalau Midtrans belum aktif).
+- Upload gambar QRIS statis tokomu dari `/admin` tab **QRIS** (tersimpan di Supabase Storage).
 - Menu & harga sudah mengikuti poster 13 Sep 2026. Perubahan harga berikutnya lewat `/admin` tab **Produk**.
 - Nomor WA toko ada di `lib/toko.js`.
 
@@ -68,7 +71,32 @@ npm run dev
 
 Buka http://localhost:3000 (di HP: pakai IP laptop, misal http://192.168.1.x:3000).
 
-## Pembayaran Midtrans
+## Login pembeli & bayar manual (alur sekarang)
+
+1. Pembeli pilih camilan → di keranjang **Masuk dengan Google** (isi keranjang nggak hilang).
+2. Isi nama & WA → **Buat Pesanan**. Pesanan tersimpan di akunnya dengan status **Belum bayar**.
+3. Bayar sekarang atau nanti: scan QRIS statis dari admin, lalu **Upload bukti**.
+   Semua pesanan bisa dibuka lagi dari **Pesanan Saya** (`/pesanan`).
+4. Status jadi **Bukti dicek**. Admin buka tab **Pesanan**:
+   - **ACC** → *Sudah bayar* (`paid_at` tercatat).
+   - **Tolak** + alasan → balik ke *Belum bayar*, alasannya tampil ke pembeli, pembeli upload ulang.
+
+### Setup login Google (sekali saja)
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services → **OAuth consent screen**
+   (External, nama app "PO Kripik", email support) → **Credentials → Create credentials → OAuth client ID**
+   (Web application).
+   - Authorized JavaScript origins: `https://kripik.ramcode.site` dan `http://localhost:3001`
+   - Authorized redirect URI: `https://<project-ref>.supabase.co/auth/v1/callback`
+2. Supabase → **Authentication → Sign In / Providers → Google** → aktifkan, tempel Client ID & Secret.
+3. Supabase → **Authentication → URL Configuration**:
+   - Site URL: `https://kripik.ramcode.site`
+   - Redirect URLs: `https://kripik.ramcode.site/**` dan `http://localhost:3001/**`
+
+## Pembayaran Midtrans (QRIS otomatis — sekarang disembunyikan)
+
+Kodenya tetap ada, tapi mati selama `QRIS_OTOMATIS` bukan `true`. Nyalakan setelah akun
+Midtrans production aktif; sampai saat itu pembeli bayar manual seperti di atas.
 
 Pakai **Snap** (halaman bayar Midtrans), khusus QRIS. Core API nggak dipakai karena belum
 diaktifkan Midtrans di akun ini (semua charge ditolak "Payment channel is not activated").
@@ -124,12 +152,14 @@ sandbox bisa nyasar ke Merchant ID production kamu.
 ## Halaman
 
 - `/` — katalog. Kalau nggak ada batch yang buka, tombol pesan mati dan muncul "PO lagi tutup".
-- `/keranjang` — isi nama + WhatsApp, buat pesanan (masuk ke batch yang lagi buka)
-- `/bayar/[id]` — QRIS dinamis (lunas otomatis), atau QRIS statis + upload bukti
-- `/admin` — login dulu, lalu 4 tab:
-  - **Pesanan** — filter per batch, ubah status, chat WA, lihat bukti, penanda lunas otomatis
+- `/keranjang` — masuk Google dulu, lalu isi nama + WhatsApp, buat pesanan (masuk ke batch yang lagi buka)
+- `/bayar/[id]` — QRIS statis dari admin + upload bukti (bisa bayar nanti). Pesanan milik akun cuma bisa dibuka pemiliknya
+- `/pesanan` — Pesanan Saya: semua pesanan si pembeli & status bayarnya
+- `/admin` — login dulu, lalu 5 tab:
+  - **Pesanan** — filter per batch, cari, ubah status, chat WA, lihat bukti, **ACC / Tolak** bukti
   - **Batch** — bikin batch baru, buka/tutup PO, edit nama & catatan
   - **Produk** — ubah harga, aktif/nonaktifkan produk
+  - **QRIS** — upload / ganti gambar QRIS statis yang di-scan pembeli
   - **Ekspor** — unduh CSV: detail pesanan (termasuk kolom Dibayar), atau rekap qty per produk
 
 ## Cara pakai per batch

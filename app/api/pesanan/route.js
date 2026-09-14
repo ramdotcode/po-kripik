@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin, serviceKeyReady } from "../../../lib/supabase-server";
+import { userDariRequest } from "../../../lib/auth-server";
 
 export const dynamic = "force-dynamic";
 
@@ -7,6 +8,10 @@ const bad = (msg, code = 400) => NextResponse.json({ error: msg }, { status: cod
 
 export async function POST(req) {
   if (!serviceKeyReady) return bad("Server belum dikonfigurasi (SUPABASE_SERVICE_ROLE_KEY kosong).", 500);
+
+  // Pembeli wajib login (Google) — pesanan disimpan di akunnya, bisa dibayar nanti
+  const user = await userDariRequest(req);
+  if (!user) return bad("Masuk dulu pakai akun Google ya.", 401);
 
   let body;
   try {
@@ -66,6 +71,8 @@ export async function POST(req) {
       total,
       status: "baru",
       batch_id: batch.id,
+      user_id: user.id,
+      customer_email: user.email || null,
     })
     .select("id")
     .single();

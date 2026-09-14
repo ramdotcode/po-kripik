@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { supabaseAdmin, serviceKeyReady } from "../../../../../lib/supabase-server";
+import { userDariRequest } from "../../../../../lib/auth-server";
 
 export const dynamic = "force-dynamic";
 
@@ -19,12 +20,20 @@ export async function POST(req, { params }) {
 
   const { data: order } = await supabaseAdmin
     .from("orders")
-    .select("id, status, paid_at")
+    .select("id, status, paid_at, user_id")
     .eq("id", id)
     .maybeSingle();
   if (!order) return bad("Pesanan tidak ditemukan.", 404);
   if (order.status === "batal") return bad("Pesanan ini sudah dibatalkan.", 409);
-  if (order.paid_at) return bad("Pesanan ini sudah lunas.", 409);
+  if (order.paid_at || ["lunas", "diproses", "selesai"].includes(order.status))
+    return bad("Pesanan ini sudah dibayar.", 409);
+
+  // Pesanan milik akun: cuma pemiliknya yang boleh kirim bukti
+  if (order.user_id) {
+    const user = await userDariRequest(req);
+    if (!user || user.id !== order.user_id)
+      return bad("Masuk dulu pakai akun yang dipakai waktu memesan.", 401);
+  }
 
   let form;
   try {
@@ -50,7 +59,7 @@ export async function POST(req, { params }) {
 
   const { error: updErr } = await supabaseAdmin
     .from("orders")
-    .update({ payment_proof_url: path, status: "menunggu_konfirmasi" })
+    .update({ payment_proof_url: path, status: "menunggu_konfirmasi", proof_note: null })
     .eq("id", id);
   if (updErr) return bad("Gagal menyimpan bukti: " + updErr.message, 500);
 
