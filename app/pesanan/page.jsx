@@ -66,6 +66,7 @@ export default function PesananSaya() {
           <TombolGoogle kembaliKe="/pesanan" className="mt-5" />
           <p className="mt-2 text-xs text-stone-400">Dengan masuk, kamu setuju dengan <Link href="/privasi" className="underline underline-offset-2">Kebijakan Privasi</Link>.</p>
         </div>
+        <FooterWa className="pt-6" teks="Ada pertanyaan? WhatsApp" pesan="Halo, mau tanya soal pesananku" />
       </main>
     );
 
