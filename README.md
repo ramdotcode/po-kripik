@@ -70,16 +70,21 @@ Buka http://localhost:3000 (di HP: pakai IP laptop, misal http://192.168.1.x:300
 
 ## Pembayaran Midtrans
 
+Pakai **Snap** (halaman bayar Midtrans), khusus QRIS. Core API nggak dipakai karena belum
+diaktifkan Midtrans di akun ini (semua charge ditolak "Payment channel is not activated").
+Webhook, signature, dan cek status Snap sama persis dengan Core API.
+
 Alurnya:
 
-1. Pembeli bikin pesanan → halaman `/bayar/[id]` minta QR ke server.
-2. Server charge QRIS ke Midtrans (berlaku 30 menit), simpan di `payment_intents`.
-   Reload halaman pakai QR yang sama, nggak bikin charge baru.
-3. Pembeli scan. Kalau bayarnya dari HP yang sama, ada tombol **Simpan QR ke Galeri**.
-4. Midtrans kirim webhook → server cek ulang status ke API Midtrans → pesanan jadi
-   **lunas** otomatis dan halaman bayar langsung berubah.
-5. Cadangan: halaman bayar juga nanya status tiap beberapa detik, dan server
-   meneruskannya ke Midtrans (maks sekali per 8 detik). Jadi tetap lunas walau
+1. Pembeli bikin pesanan → halaman `/bayar/[id]` minta sesi bayar ke server.
+2. Server bikin transaksi Snap (QRIS, berlaku 30 menit), simpan di `payment_intents`.
+   Reload halaman pakai sesi yang sama, nggak bikin transaksi baru.
+3. Pembeli tap **Bayar dengan QRIS** → halaman Midtrans menampilkan QR + tombol
+   *Download QRIS* (buat yang bayar dari HP yang sama).
+4. Setelah bayar, Midtrans mengembalikan pembeli ke `/bayar/[id]` dan kirim webhook →
+   server cek ulang status ke API Midtrans → pesanan jadi **lunas** otomatis.
+5. Cadangan: halaman bayar nanya status tiap 4 detik (langsung saat balik dari Midtrans),
+   server meneruskannya ke Midtrans maks sekali per 8 detik. Jadi tetap lunas walau
    webhook telat, gagal, atau belum bisa diterima (mis. lagi di localhost).
 
 Pengaman:
@@ -98,11 +103,11 @@ Pengaman:
    Settings → Access Keys), `MIDTRANS_IS_PRODUCTION=false`, restart `npm run dev`.
    Akun baru: key sandbox diawali `Mid-server-` juga (tanpa `SB-`), jadi awalan nggak bisa
    dipakai buat membedakan sandbox/production — cek di dashboard mode mana key itu diambil.
-2. Bikin pesanan sampai halaman bayar muncul QR.
-3. Klik kanan gambar QR → *Copy image address*.
+2. Bikin pesanan sampai halaman bayar, tap **Bayar dengan QRIS**.
+3. Di halaman Midtrans, klik kanan gambar QR → *Copy image address*.
 4. Buka [simulator QRIS Midtrans](https://simulator.sandbox.midtrans.com/v2/qris/index),
-   paste URL-nya, bayar.
-5. Dalam ±10 detik halaman bayar berubah jadi "Pembayaran berhasil" dan di admin
+   paste URL-nya → **Scan QR** → **Pay**.
+5. Balik ke halaman bayar: dalam ±10 detik berubah jadi "Pembayaran berhasil" dan di admin
    muncul penanda 💳 Lunas otomatis.
 
 **Jangan pernah bayar QR sandbox pakai e-wallet/bank beneran** — kata Midtrans, QR

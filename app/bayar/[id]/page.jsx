@@ -57,7 +57,7 @@ export default function Bayar() {
   // Jalur manual (QRIS statis + upload bukti)
   const [uploading, setUploading] = useState(false);
   // Jalur otomatis (QRIS dinamis Midtrans)
-  const [qr, setQr] = useState(null); // { qr_url, expiry_time, amount }
+  const [qr, setQr] = useState(null); // sesi Snap: { pay_url, expiry_time, amount }
   const [qrLoading, setQrLoading] = useState(false);
   const [qrHabis, setQrHabis] = useState(false);
 
@@ -96,7 +96,7 @@ export default function Bayar() {
   const perluQr =
     !!order && order.bayar_otomatis && !order.sudah_bayar && order.status !== "batal";
 
-  // Buka halaman -> langsung siapkan QR (server mengembalikan QR lama kalau masih aktif)
+  // Buka halaman -> langsung siapkan sesi bayar (server mengembalikan sesi lama kalau masih aktif)
   useEffect(() => {
     if (perluQr && !qr) bikinQr();
   }, [perluQr]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -105,7 +105,7 @@ export default function Bayar() {
   useEffect(() => {
     if (!qr || qrHabis || order?.sudah_bayar) return;
     let berhenti = false;
-    const t = setInterval(async () => {
+    const cek = async () => {
       try {
         const res = await fetch(`/api/pesanan/${id}/qris`, { cache: "no-store" });
         const data = await res.json();
@@ -115,7 +115,9 @@ export default function Bayar() {
           setError(`Pembayaran masuk tapi nominalnya beda. Hubungi penjual via WhatsApp ${KONTAK_WA} ya.`);
         else if (["expire", "cancel", "deny", "failure"].includes(data.status)) setQrHabis(true);
       } catch {}
-    }, POLL_MS);
+    };
+    cek(); // langsung, biar yang baru balik dari Midtrans nggak nunggu 4 detik
+    const t = setInterval(cek, POLL_MS);
     return () => {
       berhenti = true;
       clearInterval(t);
@@ -193,7 +195,7 @@ export default function Bayar() {
           Pesanan ini sudah dibatalkan.
         </div>
       ) : order.bayar_otomatis ? (
-        // ---------- QRIS dinamis (Midtrans) ----------
+        // ---------- QRIS lewat Midtrans Snap ----------
         <div className="m-4">
           {qrHabis ? (
             <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
@@ -210,28 +212,23 @@ export default function Bayar() {
             </div>
           ) : qr ? (
             <>
-              <div className="rounded-2xl bg-white p-4 text-center shadow-sm">
+              <div className="rounded-2xl bg-white p-5 text-center shadow-sm">
                 <p className="text-sm font-semibold">
-                  Scan QRIS, bayar <b className="text-brand-700">{rupiah(qr.amount)}</b>
+                  Bayar <b className="text-brand-700">{rupiah(qr.amount)}</b> pakai QRIS
                 </p>
                 <p className="mt-0.5 text-xs text-stone-500">
-                  Berlaku <Countdown until={qr.expiry_time} onHabis={() => setQrHabis(true)} />
+                  Selesaikan dalam <Countdown until={qr.expiry_time} onHabis={() => setQrHabis(true)} />
                 </p>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={qr.qr_url}
-                  alt="QRIS pembayaran"
-                  className="mx-auto mt-3 w-full max-w-[16rem] rounded-xl bg-white"
-                />
                 <a
-                  href={`/api/pesanan/${id}/qris/gambar`}
-                  className="mt-3 block w-full rounded-2xl bg-brand-100 py-3 text-sm font-bold text-brand-700"
+                  href={qr.pay_url}
+                  className="mt-4 block w-full rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg"
                 >
-                  💾 Simpan QR ke Galeri
+                  Bayar dengan QRIS →
                 </a>
-                <p className="mt-2 text-xs text-stone-400">
-                  Bayar dari HP ini? Simpan QR-nya, lalu di e-wallet / m-banking pilih Scan → ambil
-                  dari galeri.
+                <p className="mt-3 text-xs text-stone-400">
+                  Kamu dibawa ke halaman pembayaran Midtrans. QR-nya bisa di-scan dari HP lain atau
+                  diunduh lalu di-upload dari aplikasi e-wallet / m-banking. Setelah bayar, kamu
+                  balik ke sini otomatis.
                 </p>
               </div>
 

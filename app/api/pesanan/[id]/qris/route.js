@@ -3,11 +3,10 @@ import { supabaseAdmin, serviceKeyReady } from "../../../../../lib/supabase-serv
 import {
   midtransReady,
   buildOrderRef,
-  chargeQris,
+  createSnap,
   getStatus,
   applyStatus,
-  qrUrlFrom,
-  parseExpiry,
+  QR_EXPIRY_MINUTES,
 } from "../../../../../lib/midtrans";
 
 export const dynamic = "force-dynamic";
@@ -45,18 +44,19 @@ async function latestIntent(orderId) {
   return data;
 }
 
+// Link halaman bayar Snap disimpan di payload (kolom qr_url peninggalan Core API dibiarkan kosong)
 const view = (intent, status) => ({
   paid: false,
   status: status || intent.status,
-  qr_url: intent.qr_url,
+  pay_url: intent.payload?.redirect_url || null,
   expiry_time: intent.expiry_time,
   amount: intent.amount,
   ref: intent.order_ref,
 });
 
-// Bikin QR baru, atau kembalikan QR yang masih aktif —
-// reload halaman bayar tidak boleh bikin charge baru terus-terusan.
-export async function POST(_req, { params }) {
+// Bikin sesi bayar Snap baru, atau kembalikan yang masih aktif —
+// reload halaman bayar tidak boleh bikin transaksi baru terus-terusan.
+export async function POST(req, { params }) {
   const g = guard(params?.id);
   if (g) return g;
 
@@ -68,7 +68,7 @@ export async function POST(_req, { params }) {
 
   const current = await latestIntent(order.id);
   const sisaMs = current ? new Date(current.expiry_time).getTime() - Date.now() : 0;
-  if (current && current.status === "pending" && current.qr_url && sisaMs > 60_000) {
+  if (current && current.status === "pending" && current.payload?.redirect_url && sisaMs > 60_000) {
     return json(view(current));
   }
 
@@ -88,30 +88,29 @@ export async function POST(_req, { params }) {
   const sum = itemDetails.reduce((s, it) => s + it.price * it.quantity, 0);
 
   const orderRef = buildOrderRef(order.id);
-  let charge;
+  let snap;
   try {
-    charge = await chargeQris({
+    snap = await createSnap({
       orderRef,
       amount: order.total,
       items: sum === order.total ? itemDetails : undefined,
       customer: { first_name: String(order.customer_name).slice(0, 50), phone: order.phone },
+      // Setelah bayar, Midtrans mengembalikan pembeli ke halaman bayar kita
+      finishUrl: `${new URL(req.url).origin}/bayar/${order.id}`,
     });
   } catch (e) {
-    console.error("[midtrans] charge gagal:", e.message);
-    return bad("Gagal membuat QRIS: " + e.message, 502);
+    console.error("[midtrans] snap gagal:", e.message);
+    return bad("Gagal menyiapkan pembayaran: " + e.message, 502);
   }
-
-  const qrUrl = qrUrlFrom(charge);
-  if (!qrUrl) return bad("Midtrans tidak mengirim gambar QR.", 502);
 
   const intent = {
     order_ref: orderRef,
     order_id: order.id,
     amount: order.total,
-    status: charge.transaction_status || "pending",
-    qr_url: qrUrl,
-    expiry_time: parseExpiry(charge.expiry_time),
-    payload: charge,
+    status: "pending",
+    qr_url: null,
+    expiry_time: new Date(Date.now() + QR_EXPIRY_MINUTES * 60_000).toISOString(),
+    payload: { token: snap.token, redirect_url: snap.redirect_url },
   };
   const { error } = await supabaseAdmin.from("payment_intents").insert(intent);
   if (error) return bad("Gagal menyimpan sesi pembayaran: " + error.message, 500);
