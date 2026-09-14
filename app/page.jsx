@@ -5,6 +5,7 @@ import Link from "next/link";
 import { supabase, rupiah } from "../lib/supabase";
 import { useCart } from "../lib/cart";
 import { LOKASI_ANTAR, waLink } from "../lib/toko";
+import { masukGoogle, namaAkun, useSesi } from "../lib/auth";
 import { CaraPesan, Daun, FooterWa, Logo, Percik, Stempel, Stepper } from "../components/Brand";
 import {
   IkonBulan,
@@ -18,6 +19,7 @@ import {
   IkonWhatsApp,
   IkonAkun,
   IkonChevronKanan,
+  IkonGoogle,
 } from "../components/Ikon";
 
 // Urutan poster (sort_order) dulu; yang belum punya urutan di belakang, urut abjad.
@@ -143,6 +145,79 @@ function HeroBatch({ batch, loading }) {
   );
 }
 
+// Pintu masuk akun di atas katalog: yang sudah pernah pesan bisa langsung masuk
+// & lihat pesanannya tanpa harus bikin pesanan dulu.
+function BarAkun() {
+  const sesi = useSesi();
+  const uid = sesi?.user?.id;
+  const [perluBayar, setPerluBayar] = useState(0);
+
+  // Pesanan "Belum bayar" (termasuk yang buktinya ditolak) — RLS: cuma milik sendiri
+  useEffect(() => {
+    if (!uid) return;
+    supabase
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", uid)
+      .eq("status", "baru")
+      .then(({ count }) => setPerluBayar(count || 0));
+  }, [uid]);
+
+  if (sesi === undefined) return <div className="mx-4 mt-3 h-[3.25rem] animate-pulse rounded-2xl bg-brand-100/70" />;
+
+  if (!sesi)
+    return (
+      <div className="mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white/90 py-2 pl-4 pr-2 shadow-sm">
+        <IkonAkun className="h-5 w-5 shrink-0 text-brand-600" />
+        <p className="min-w-0 flex-1 text-sm leading-tight">
+          <b className="block">Sudah pernah pesan?</b>
+          <span className="text-xs text-stone-500">Masuk buat lihat pesanan & bayar</span>
+        </p>
+        <button
+          type="button"
+          onClick={() => masukGoogle("/pesanan")}
+          className="inline-flex h-10 shrink-0 items-center gap-2 rounded-full border border-stone-200 bg-white px-3.5 text-sm font-bold shadow-sm transition active:scale-[0.98]"
+        >
+          <IkonGoogle className="h-4 w-4" />
+          Masuk
+        </button>
+      </div>
+    );
+
+  const nama = namaAkun(sesi.user).split(" ")[0] || sesi.user.email;
+  const foto = sesi.user.user_metadata?.avatar_url;
+  return (
+    <Link
+      href="/pesanan"
+      className="mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white/90 px-4 py-2.5 shadow-sm"
+    >
+      {foto ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={foto}
+          alt=""
+          referrerPolicy="no-referrer"
+          className="h-9 w-9 shrink-0 rounded-full object-cover ring-2 ring-brand-100"
+        />
+      ) : (
+        <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-100 text-brand-600">
+          <IkonAkun className="h-5 w-5" />
+        </span>
+      )}
+      <p className="min-w-0 flex-1 text-sm leading-tight">
+        <span className="block truncate text-xs text-stone-500">Hai, {nama}</span>
+        <b>Pesanan Saya</b>
+      </p>
+      {perluBayar > 0 && (
+        <span className="shrink-0 rounded-full bg-red-600 px-2.5 py-1 text-xs font-bold text-white">
+          {perluBayar} belum bayar
+        </span>
+      )}
+      <IkonChevronKanan className="h-4 w-4 shrink-0 text-brand-400" />
+    </Link>
+  );
+}
+
 export default function Katalog() {
   const [products, setProducts] = useState([]);
   const [batch, setBatch] = useState(null);
@@ -199,15 +274,7 @@ export default function Katalog() {
         </a>
       </header>
 
-      <Link
-        href="/pesanan"
-        className="mx-4 mt-3 flex items-center gap-3 rounded-2xl border border-brand-100 bg-white/90 px-4 py-2.5 text-sm shadow-sm"
-      >
-        <IkonAkun className="h-5 w-5 shrink-0 text-brand-600" />
-        <span className="flex-1 font-semibold">Pesanan Saya</span>
-        <span className="text-xs text-stone-500">cek status & bayar</span>
-        <IkonChevronKanan className="h-4 w-4 shrink-0 text-brand-400" />
-      </Link>
+      <BarAkun />
 
       <HeroBatch batch={batch} loading={loading} />
 

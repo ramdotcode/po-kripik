@@ -23,6 +23,8 @@ Pesanan dikelompokkan per **batch PO** yang dibuka/ditutup dari halaman admin.
 
 ## Halaman
 - `/` — katalog (`products` aktif) + banner batch. Kalau tidak ada batch `status='buka'`: tombol pesan mati, gambar grayscale, keranjang otomatis dikosongkan
+  - `BarAkun` di bawah header: belum login → "Sudah pernah pesan? Masuk" (Google, balik ke /pesanan); sudah login → foto + "Hai, nama · Pesanan Saya" + badge jumlah pesanan `baru` (belum bayar)
+  - Cara Pesan (`LANGKAH` di Brand.jsx): Pilih camilan → Masuk & pesan → Bayar nanti (tiap langkah maks 2 baris biar muat di HP). Halaman bayar: `aktif` 3 = belum bayar, 4 = sudah bayar
 - `/keranjang` — edit qty; belum login → tombol "Masuk dengan Google" (balik ke /keranjang, isi keranjang tetap); sudah login → form (nama dari Google, WA diingat di localStorage `kripik-wa`) → POST `/api/pesanan` pakai `fetchAuth` → `/bayar/[id]`
 - `/bayar/[id]` — GET `/api/pesanan/[id]` (field `bayar_otomatis` menentukan mode):
   - otomatis: POST `/api/pesanan/[id]/qris` → tombol "Bayar dengan QRIS" ke halaman Snap (`pay_url`) + countdown; polling GET `/qris` tiap 4 detik, langsung cek saat pembeli balik dari Snap

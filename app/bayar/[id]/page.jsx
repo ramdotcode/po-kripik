@@ -474,7 +474,7 @@ export default function Bayar() {
         Hai <b className="text-coklat-900">{order.customer_name}</b>, {sapaan}
       </p>
 
-      {!batal && <CaraPesan judul={null} aktif={order.sudah_bayar ? 3 : 2} className="mx-4 mt-3" />}
+      {!batal && <CaraPesan judul={null} aktif={order.sudah_bayar ? 4 : 3} className="mx-4 mt-3" />}
 
       <div className="mx-4 mt-4">{bagianBayar}</div>
 

@@ -4,11 +4,11 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { KONTAK_WA, LOKASI_ANTAR, waLink } from "../lib/toko";
 import {
+  IkonAkun,
   IkonCentang,
   IkonChevronKanan,
   IkonKeranjang,
   IkonMinus,
-  IkonPaket,
   IkonPanahKiri,
   IkonPin,
   IkonPlus,
@@ -108,13 +108,14 @@ export function Stempel({ children, className = "relative" }) {
   );
 }
 
+// Pembeli masuk Google dulu, pesan, lalu bayar QRIS kapan saja (upload bukti, dicek admin).
 const LANGKAH = [
   [IkonKeranjang, "Pilih", "camilan"],
-  [IkonQr, "Bayar", "QRIS"],
-  [IkonPaket, "Tunggu", "datang"],
+  [IkonAkun, "Masuk", "& pesan"],
+  [IkonQr, "Bayar", "nanti"],
 ];
 
-// `aktif` (1–3) dipakai di halaman bayar buat menandai posisi pembeli.
+// `aktif` (1–4) dipakai di halaman bayar buat menandai posisi pembeli; 4 = semua langkah beres.
 export function CaraPesan({ aktif, judul = "Cara Pesan", className = "" }) {
   return (
     <section className={`kartu px-4 py-4 ${className}`}>
