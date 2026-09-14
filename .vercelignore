@@ -1,0 +1,11 @@
+# Jangan pernah upload key rahasia ke Vercel lewat file — isi lewat
+# Vercel Dashboard -> Project -> Settings -> Environment Variables.
+.env
+.env.*
+!.env.local.example
+
+# Tidak perlu ikut deploy
+node_modules
+.next
+supabase
+*.md
