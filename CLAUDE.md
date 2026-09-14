@@ -95,7 +95,8 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - QRIS statis SUDAH diupload (14 Sep 09:57 WIB). Batch 2 buka ("Start 14 September 2026"). Pesanan tes akun Google: #c79ba175 (Belum bayar)
 - Upload bukti dari sisi pembeli SUDAH jalan di web live (pesanan #2f6976c2, 14 Sep 10:50 WIB). ACC/Tolak lewat tombol belum dites
 - Kode unik urut mulai 101 SUDAH aktif (akun baru pertama dapat 101). Kode lama: 616, 409
-- Login via tombol GIS (domain sendiri) sudah online tapi belum dipakai login sungguhan per 14 Sep 11:00 WIB (sesi pembeli masih dari login lama)
+- Login via tombol GIS (domain sendiri) SUDAH jalan (login sungguhan pertama 14 Sep 12:48 WIB)
+- Layar login Google menulis "continue to ramcode.site" (Google selalu tampilkan domain utama, bukan subdomain). KEPUTUSAN user: dibiarkan begitu — JANGAN ajukan verifikasi brand / ganti domain kecuali diminta. Cara login cadangan (redirect supabase.co) tetap ada
 - UI tidak boleh menjanjikan "kami kabari/hubungi lewat WhatsApp" — admin tidak mengirim notifikasi; arahkan pembeli cek Pesanan Saya
 - GitHub: `ramdotcode/po-kripik` (PUBLIK). Push via SSH alias `github.com-ramdotcode`; identitas git lokal ramdotcode <ramdotcode@gmail.com>
 - LIVE di https://kripik.ramcode.site — Vercel project `po-kripik` (preset Next.js, deploy otomatis dari push ke `main`, env lengkap). DNS Cloudflare: CNAME → Vercel, DNS only
