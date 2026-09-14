@@ -59,7 +59,7 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - Ketiga file WAJIB dijalankan urut — kode membaca kolom dari semuanya
 - `supabase/migration-menu-poster.sql` — `products.weight`, `badge` (FAVORIT/BARU), `sort_order` (urutan poster). Opsional: tanpa ini web tetap jalan, berat/badge tidak tampil & katalog urut abjad
 - `supabase/migration-login-bayar-manual.sql` — WAJIB: `orders.user_id` / `customer_email` / `proof_note`; RLS pembeli baca pesanan & item miliknya; tabel `settings` (key/value, baca publik, tulis admin); bucket publik `toko` (upload/hapus admin)
-- `supabase/migration-kode-unik.sql` — WAJIB: tabel `kode_unik` (1 kode 1–999 per akun, unik; RLS baca sendiri/admin; tulis cuma lewat fungsi `ambil_kode_unik(p_user)` security definer, execute khusus service_role) + `orders.kode_unik` (salinan kode saat pesan)
+- `supabase/migration-kode-unik.sql` — WAJIB: tabel `kode_unik` (1 kode per akun, unik, diberikan URUT mulai 101 → nomor kosong terkecil; kalau 101–999 habis pakai 1–100; akun lama 616 & 409 tetap; RLS baca sendiri/admin; tulis cuma lewat fungsi `ambil_kode_unik(p_user)` security definer, execute khusus service_role) + `orders.kode_unik` (salinan kode saat pesan)
   - Nominal transfer = `orders.total` + `orders.kode_unik`. `total` tetap harga produk (rekap/ekspor/Midtrans pakai ini). POST /api/pesanan panggil RPC; gagal → pesanan tetap dibuat tanpa kode
 - `batches`: id, name, status (`buka`/`tutup`), note, created_at, closed_at
   - Unique index parsial `batches_hanya_satu_buka` → cuma boleh SATU batch `status='buka'`

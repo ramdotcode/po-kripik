@@ -29,7 +29,8 @@ Buka **SQL Editor**, jalankan satu per satu:
 5. `supabase/migration-login-bayar-manual.sql` — **wajib**: pesanan nempel ke akun pembeli,
    alasan tolak bukti, tabel `settings` (gambar QRIS), bucket publik `toko`.
 6. `supabase/migration-kode-unik.sql` — **wajib**: kode unik 3 digit per akun yang ditambahkan ke
-   nominal transfer (mis. Rp54.000 → Rp54.037), biar admin gampang mencocokkan mutasi.
+   nominal transfer (mis. Rp54.000 → Rp54.101), biar admin gampang mencocokkan mutasi.
+   Kode dibagikan urut mulai 101 (101, 102, …) dan tetap selamanya untuk akun itu.
 
 Jangan dilompati: kode sudah membaca kolom dari ketiga file ini. Kalau yang ke-3 belum
 jalan, halaman bayar bakal bilang "Pesanan tidak ditemukan".
@@ -79,7 +80,7 @@ Buka http://localhost:3000 (di HP: pakai IP laptop, misal http://192.168.1.x:300
 2. Isi nama & WA → **Buat Pesanan**. Pesanan tersimpan di akunnya dengan status **Belum bayar**.
 3. Bayar sekarang atau nanti: scan QRIS statis dari admin, lalu **Upload bukti**.
    Semua pesanan bisa dibuka lagi dari **Pesanan Saya** (`/pesanan`).
-   Nominal transfer = total + **kode unik akun** (3 digit terakhir), mis. Rp54.000 → Rp54.037.
+   Nominal transfer = total + **kode unik akun** (3 digit terakhir), mis. Rp54.000 → Rp54.101.
 4. Status jadi **Bukti dicek**. Admin buka tab **Pesanan** (bisa cari pakai nominal dari mutasi, mis. `54037`):
    - **ACC** → *Sudah bayar* (`paid_at` tercatat).
    - **Tolak** + alasan → balik ke *Belum bayar*, alasannya tampil ke pembeli, pembeli upload ulang.
