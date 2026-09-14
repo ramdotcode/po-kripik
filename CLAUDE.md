@@ -71,12 +71,14 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - Project Supabase `cxrkrpnlubakmzlrckaj` sempat ter-pause (free plan, 7 hari sepi), di-restore 2026-09-14. Perlu pencegah pause (ping cron / Pro) sebelum jualan beneran
 - `.env.local`: service role key & Midtrans Server Key SANDBOX terisi (akun Midtrans baru, merchant "ramcode"; key sandbox tanpa awalan `SB-`)
 - Alur Snap end-to-end SUDAH lolos di sandbox (2026-09-14): sesi bayar → simulator QRIS → polling & webhook → pesanan lunas, idempoten, signature palsu ditolak
-- Midtrans production BELUM diaktivasi — form aktivasi butuh link web live (rencana https://kripik.ramcode.site)
+- Di web live juga terbukti: webhook (header `X-Override-Notification`) sampai & menandai lunas TANPA polling. Settlement sandbox kadang telat beberapa menit setelah simulator bilang PAID
+- Midtrans production BELUM diaktivasi — link untuk form aktivasi: https://kripik.ramcode.site
 - GitHub: `ramdotcode/po-kripik` (PUBLIK). Push via SSH alias `github.com-ramdotcode`; identitas git lokal ramdotcode <ramdotcode@gmail.com>
-- Vercel: project `po-kripik` (dibuat ulang user, preset Next.js) BELUM punya env var & deployment. DNS `kripik.ramcode.site` belum ada di Cloudflare (butuh A → 76.76.21.21, DNS only)
+- LIVE di https://kripik.ramcode.site — Vercel project `po-kripik` (preset Next.js, deploy otomatis dari push ke `main`, env lengkap). DNS Cloudflare: CNAME → Vercel, DNS only
+- Region: Supabase di AWS **ap-southeast-2 (Sydney)** → Vercel Function Region di-set **syd1**. Request pesanan ~0,4–0,9 dtk (dulu iad1 1–2 dtk, sin1 ~1,2 dtk)
 - `public/qris.png` masih placeholder (600x700)
 - Menu & harga sesuai poster 13 Sep 2026: 15 aktif, Sale Pisang Jari nonaktif (bukan dihapus). `migration-menu-poster.sql` BELUM dijalankan
-- Pesanan tes di Batch 1: 2 atas nama "Rama" (29 Agu, harga lama, status baru) + "TES Midtrans (Claude)" #4e804787 (Kremes Ubi, lunas via sandbox)
+- Pesanan tes di Batch 1: 2 atas nama "Rama" (29 Agu, harga lama, status baru) + "TES Midtrans (Claude)" #4e804787 & "TES Live Webhook (Claude)" #e12f537a (Kremes Ubi, lunas via sandbox) — semua perlu ditandai Batal
 - `npm audit`: Next.js 14.2.x kena advisory high (fix-nya upgrade ke Next 16, breaking) — dibiarkan dulu
 
 ## Konvensi
