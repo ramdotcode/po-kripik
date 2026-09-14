@@ -29,6 +29,7 @@ Pesanan dikelompokkan per **batch PO** yang dibuka/ditutup dari halaman admin.
   - manual (default): QRIS dari `settings.qris_url` + "Sudah Bayar? Upload Bukti" → POST `/api/pesanan/[id]/bukti`; "Bayar nanti aja" → `/pesanan`; alasan tolak admin (`bukti_ditolak`) tampil; saat `menunggu_konfirmasi` bisa "Ganti foto bukti"
   - pesanan milik akun & belum login → layar "Masuk dulu" (API balas 401 `perlu_login`)
 - `/pesanan` — Pesanan Saya (baca langsung via RLS `pesanan baca pemilik`). Label pembeli: Belum bayar / Bukti dicek / Bukti ditolak / Sudah bayar / Diproses / Selesai / Dibatalkan
+- `/privasi` — Kebijakan Privasi (server component, wajib untuk publish Google OAuth app); ditautkan di footer katalog & kartu login keranjang / Pesanan Saya
 - `/admin` — login Supabase Auth. 4 tab: Pesanan (filter batch, ubah status, link WA, signed URL bukti, badge lunas otomatis), Batch (CRUD + buka/tutup), Produk (harga, aktif), Ekspor (CSV)
 
 ## Route API (server-side, service role)
@@ -81,7 +82,9 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - Alur Snap end-to-end SUDAH lolos di sandbox (2026-09-14): sesi bayar → simulator QRIS → polling & webhook → pesanan lunas, idempoten, signature palsu ditolak
 - Di web live juga terbukti: webhook (header `X-Override-Notification`) sampai & menandai lunas TANPA polling. Settlement sandbox kadang telat beberapa menit setelah simulator bilang PAID
 - Midtrans production BELUM diaktivasi — link untuk form aktivasi: https://kripik.ramcode.site. Sampai aktif, QRIS otomatis disembunyikan (`QRIS_OTOMATIS` jangan diisi di Vercel)
-- Login Google + bayar manual SUDAH dikodekan: `migration-login-bayar-manual.sql` BELUM dijalankan & provider Google BELUM aktif di Supabase (per 2026-09-14). Tanpa migrasi, halaman bayar & pembuatan pesanan gagal — jangan push/deploy sebelum migrasi jalan
+- Login Google + bayar manual LIVE (2026-09-14): migrasi sudah jalan, provider Google aktif di Supabase, redirect URI terdaftar di Google
+- Google OAuth app belum 'In production': Branding butuh nama, support email, homepage, privacy policy (`/privasi`). JANGAN upload logo (memicu verifikasi brand)
+- QRIS statis belum diupload admin (tab QRIS). Batch 1 tutup sejak 08:04 WIB 14 Sep
 - GitHub: `ramdotcode/po-kripik` (PUBLIK). Push via SSH alias `github.com-ramdotcode`; identitas git lokal ramdotcode <ramdotcode@gmail.com>
 - LIVE di https://kripik.ramcode.site — Vercel project `po-kripik` (preset Next.js, deploy otomatis dari push ke `main`, env lengkap). DNS Cloudflare: CNAME → Vercel, DNS only
 - Region: Supabase di AWS **ap-southeast-2 (Sydney)** → Vercel Function Region di-set **syd1**. Request pesanan ~0,4–0,9 dtk (dulu iad1 1–2 dtk, sin1 ~1,2 dtk)

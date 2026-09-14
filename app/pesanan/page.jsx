@@ -66,6 +66,7 @@ export default function PesananSaya() {
             <IkonGoogle className="h-5 w-5" />
             Masuk dengan Google
           </button>
+          <p className="mt-2 text-xs text-stone-400">Dengan masuk, kamu setuju dengan <Link href="/privasi" className="underline underline-offset-2">Kebijakan Privasi</Link>.</p>
         </div>
       </main>
     );

@@ -262,11 +262,18 @@ export default function Katalog() {
       </section>
 
       {!loading && (
-        <FooterWa
-          className="relative z-10 pt-8"
-          teks="Tanya-tanya soal PO? WhatsApp"
-          pesan="Halo, mau tanya soal PO kripik"
-        />
+        <>
+          <FooterWa
+            className="relative z-10 pt-8"
+            teks="Tanya-tanya soal PO? WhatsApp"
+            pesan="Halo, mau tanya soal PO kripik"
+          />
+          <p className="relative z-10 pt-2 text-center text-xs text-stone-500">
+            <Link href="/privasi" className="underline underline-offset-2">
+              Kebijakan Privasi
+            </Link>
+          </p>
+        </>
       )}
       <Daun className="pointer-events-none absolute bottom-0 left-0 h-28 w-20 text-brand-200/80" />
       <Daun className="pointer-events-none absolute bottom-0 right-0 h-28 w-20 -scale-x-100 text-brand-200/80" />

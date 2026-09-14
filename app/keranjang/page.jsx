@@ -182,7 +182,10 @@ export default function Keranjang() {
                 <IkonGoogle className="h-5 w-5" />
                 Masuk dengan Google
               </button>
-              <p className="mt-2 text-xs text-stone-400">Tenang, isi keranjangmu nggak hilang.</p>
+              <p className="mt-2 text-xs text-stone-400">
+                Tenang, isi keranjangmu nggak hilang. Dengan masuk, kamu setuju dengan {" "}
+                <Link href="/privasi" className="underline underline-offset-2">Kebijakan Privasi</Link>.
+              </p>
             </div>
           ) : sesi === undefined ? (
             <div className="kartu mx-4 mt-4 h-40 animate-pulse" />

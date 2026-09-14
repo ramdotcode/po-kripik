@@ -92,6 +92,10 @@ Buka http://localhost:3000 (di HP: pakai IP laptop, misal http://192.168.1.x:300
 3. Supabase → **Authentication → URL Configuration**:
    - Site URL: `https://kripik.ramcode.site`
    - Redirect URLs: `https://kripik.ramcode.site/**` dan `http://localhost:3001/**`
+4. Google Auth Platform → **Branding**: App name `PO Kripik`, user support email, homepage
+   `https://kripik.ramcode.site`, privacy policy `https://kripik.ramcode.site/privasi`, authorized domains
+   `ramcode.site` + `<project-ref>.supabase.co`. **Jangan upload logo** (memicu verifikasi brand).
+   Lalu **Audience → Publish app** (In production). Scope cuma email/profile/openid → nggak perlu verifikasi.
 
 ## Pembayaran Midtrans (QRIS otomatis — sekarang disembunyikan)
 
@@ -155,6 +159,7 @@ sandbox bisa nyasar ke Merchant ID production kamu.
 - `/keranjang` — masuk Google dulu, lalu isi nama + WhatsApp, buat pesanan (masuk ke batch yang lagi buka)
 - `/bayar/[id]` — QRIS statis dari admin + upload bukti (bisa bayar nanti). Pesanan milik akun cuma bisa dibuka pemiliknya
 - `/pesanan` — Pesanan Saya: semua pesanan si pembeli & status bayarnya
+- `/privasi` — Kebijakan Privasi (syarat publish login Google), ditautkan di footer & kartu login
 - `/admin` — login dulu, lalu 5 tab:
   - **Pesanan** — filter per batch, cari, ubah status, chat WA, lihat bukti, **ACC / Tolak** bukti
   - **Batch** — bikin batch baru, buka/tutup PO, edit nama & catatan
