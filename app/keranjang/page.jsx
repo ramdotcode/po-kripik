@@ -190,7 +190,7 @@ export default function Keranjang() {
           <form onSubmit={submit} className="kartu mx-4 mt-4 space-y-4 p-4">
             <div>
               <p className="font-extrabold">Data pemesan</p>
-              <p className="text-xs text-stone-500">Buat konfirmasi pesanan lewat WhatsApp.</p>
+              <p className="text-xs text-stone-500">Dipakai kalau kami perlu menghubungimu soal pesanan.</p>
               <p className="mt-2 flex items-center justify-between gap-2 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">
                 <span className="truncate">
                   Masuk sebagai <b>{sesi.user.email}</b>

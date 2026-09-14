@@ -55,7 +55,7 @@ export default function Privasi() {
         <Bagian judul="Untuk apa datanya dipakai">
           <ul className="list-disc space-y-1.5 pl-5">
             <li>Mencatat, memproses, dan mengantar pesananmu.</li>
-            <li>Menghubungimu lewat WhatsApp soal pesanan dan pembayaran.</li>
+            <li>Menghubungimu lewat WhatsApp kalau ada kendala soal pesanan atau pembayaran.</li>
             <li>Mengecek bukti pembayaran sebelum pesanan diproses.</li>
             <li>Menampilkan riwayat pesananmu di menu Pesanan Saya.</li>
           </ul>

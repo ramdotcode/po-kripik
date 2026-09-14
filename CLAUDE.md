@@ -93,8 +93,10 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - Login Google + bayar manual LIVE (2026-09-14): migrasi sudah jalan, provider Google aktif di Supabase, redirect URI terdaftar di Google
 - Google OAuth app belum 'In production': Branding butuh nama, support email, homepage, privacy policy (`/privasi`). JANGAN upload logo (memicu verifikasi brand)
 - QRIS statis SUDAH diupload (14 Sep 09:57 WIB). Batch 2 buka ("Start 14 September 2026"). Pesanan tes akun Google: #c79ba175 (Belum bayar)
-- Upload bukti dari sisi pembeli di web live BELUM pernah dicoba (bucket `bukti` masih kosong per 14 Sep) — tes Tolak/ACC user kemungkinan lewat dropdown status
-- Kode unik per akun SUDAH dikodekan (commit lokal): `migration-kode-unik.sql` BELUM dijalankan — JANGAN push sebelum migrasi (GET /api/pesanan/[id] & /pesanan butuh kolom `kode_unik`)
+- Upload bukti dari sisi pembeli SUDAH jalan di web live (pesanan #2f6976c2, 14 Sep 10:50 WIB). ACC/Tolak lewat tombol belum dites
+- Kode unik urut mulai 101 SUDAH aktif (akun baru pertama dapat 101). Kode lama: 616, 409
+- Login via tombol GIS (domain sendiri) sudah online tapi belum dipakai login sungguhan per 14 Sep 11:00 WIB (sesi pembeli masih dari login lama)
+- UI tidak boleh menjanjikan "kami kabari/hubungi lewat WhatsApp" — admin tidak mengirim notifikasi; arahkan pembeli cek Pesanan Saya
 - GitHub: `ramdotcode/po-kripik` (PUBLIK). Push via SSH alias `github.com-ramdotcode`; identitas git lokal ramdotcode <ramdotcode@gmail.com>
 - LIVE di https://kripik.ramcode.site — Vercel project `po-kripik` (preset Next.js, deploy otomatis dari push ke `main`, env lengkap). DNS Cloudflare: CNAME → Vercel, DNS only
 - Region: Supabase di AWS **ap-southeast-2 (Sydney)** → Vercel Function Region di-set **syd1**. Request pesanan ~0,4–0,9 dtk (dulu iad1 1–2 dtk, sin1 ~1,2 dtk)

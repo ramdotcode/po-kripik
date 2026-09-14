@@ -287,7 +287,7 @@ export default function Bayar() {
   let bagianBayar;
   if (order.sudah_bayar) {
     bagianBayar = (
-      <Selesai judul="Pembayaran berhasil! 🎉" pesan="Pesananmu sudah lunas. Kami hubungi via WhatsApp ya." />
+      <Selesai judul="Pembayaran berhasil! 🎉" pesan="Pesananmu sudah lunas, tinggal tunggu diantar ya." />
     );
   } else if (batal) {
     bagianBayar = (
@@ -376,7 +376,7 @@ export default function Bayar() {
         </span>
         <p className="mt-4 text-xl font-extrabold">Bukti lagi dicek admin</p>
         <p className="mt-1 text-sm text-stone-600">
-          Kalau sudah di-ACC, status pesananmu jadi <b>Sudah bayar</b>. Kami kabari juga lewat WhatsApp.
+          Kalau sudah di-ACC, status pesananmu jadi <b>Sudah bayar</b>. Cek statusnya kapan saja di Pesanan Saya.
         </p>
         <label
           aria-disabled={uploading || undefined}
