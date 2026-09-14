@@ -15,7 +15,7 @@ centang *Auto Confirm User*. Ini yang nanti dipakai login di `/admin`.
 Pendaftaran publik **biarkan AKTIF** — pembeli daftar otomatis lewat Google. Akun pembeli
 nggak bisa masuk admin, karena admin dicek dari tabel `admins`.
 
-### 2. Jalankan SQL — urut (1–3 & 5 wajib)
+### 2. Jalankan SQL — urut (1–3, 5, 6 wajib)
 
 Buka **SQL Editor**, jalankan satu per satu:
 
@@ -28,6 +28,8 @@ Buka **SQL Editor**, jalankan satu per satu:
    Opsional: tanpa ini web tetap jalan, cuma berat/badge belum tampil dan menu urut abjad.
 5. `supabase/migration-login-bayar-manual.sql` — **wajib**: pesanan nempel ke akun pembeli,
    alasan tolak bukti, tabel `settings` (gambar QRIS), bucket publik `toko`.
+6. `supabase/migration-kode-unik.sql` — **wajib**: kode unik 3 digit per akun yang ditambahkan ke
+   nominal transfer (mis. Rp54.000 → Rp54.037), biar admin gampang mencocokkan mutasi.
 
 Jangan dilompati: kode sudah membaca kolom dari ketiga file ini. Kalau yang ke-3 belum
 jalan, halaman bayar bakal bilang "Pesanan tidak ditemukan".
@@ -77,7 +79,8 @@ Buka http://localhost:3000 (di HP: pakai IP laptop, misal http://192.168.1.x:300
 2. Isi nama & WA → **Buat Pesanan**. Pesanan tersimpan di akunnya dengan status **Belum bayar**.
 3. Bayar sekarang atau nanti: scan QRIS statis dari admin, lalu **Upload bukti**.
    Semua pesanan bisa dibuka lagi dari **Pesanan Saya** (`/pesanan`).
-4. Status jadi **Bukti dicek**. Admin buka tab **Pesanan**:
+   Nominal transfer = total + **kode unik akun** (3 digit terakhir), mis. Rp54.000 → Rp54.037.
+4. Status jadi **Bukti dicek**. Admin buka tab **Pesanan** (bisa cari pakai nominal dari mutasi, mis. `54037`):
    - **ACC** → *Sudah bayar* (`paid_at` tercatat).
    - **Tolak** + alasan → balik ke *Belum bayar*, alasannya tampil ke pembeli, pembeli upload ulang.
 

@@ -157,6 +157,9 @@ export default function Keranjang() {
               </div>
               <p className="text-2xl font-extrabold tabular-nums text-brand-700">{rupiah(totalPrice)}</p>
             </div>
+            <p className="mt-1 text-xs text-stone-500">
+              Saat bayar ditambah kode unik 3 digit akunmu (maks Rp999) biar pembayaranmu gampang dicek.
+            </p>
             <div className="mt-3 space-y-2">
               {batch?.note && (
                 <p className="flex items-start gap-2 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">

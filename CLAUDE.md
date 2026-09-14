@@ -59,6 +59,8 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - Ketiga file WAJIB dijalankan urut — kode membaca kolom dari semuanya
 - `supabase/migration-menu-poster.sql` — `products.weight`, `badge` (FAVORIT/BARU), `sort_order` (urutan poster). Opsional: tanpa ini web tetap jalan, berat/badge tidak tampil & katalog urut abjad
 - `supabase/migration-login-bayar-manual.sql` — WAJIB: `orders.user_id` / `customer_email` / `proof_note`; RLS pembeli baca pesanan & item miliknya; tabel `settings` (key/value, baca publik, tulis admin); bucket publik `toko` (upload/hapus admin)
+- `supabase/migration-kode-unik.sql` — WAJIB: tabel `kode_unik` (1 kode 1–999 per akun, unik; RLS baca sendiri/admin; tulis cuma lewat fungsi `ambil_kode_unik(p_user)` security definer, execute khusus service_role) + `orders.kode_unik` (salinan kode saat pesan)
+  - Nominal transfer = `orders.total` + `orders.kode_unik`. `total` tetap harga produk (rekap/ekspor/Midtrans pakai ini). POST /api/pesanan panggil RPC; gagal → pesanan tetap dibuat tanpa kode
 - `batches`: id, name, status (`buka`/`tutup`), note, created_at, closed_at
   - Unique index parsial `batches_hanya_satu_buka` → cuma boleh SATU batch `status='buka'`
   - Karena itu, membuka batch harus menutup yang lain dulu (lihat `components/admin/Batches.jsx`)
@@ -86,7 +88,9 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - Midtrans production BELUM diaktivasi — link untuk form aktivasi: https://kripik.ramcode.site. Sampai aktif, QRIS otomatis disembunyikan (`QRIS_OTOMATIS` jangan diisi di Vercel)
 - Login Google + bayar manual LIVE (2026-09-14): migrasi sudah jalan, provider Google aktif di Supabase, redirect URI terdaftar di Google
 - Google OAuth app belum 'In production': Branding butuh nama, support email, homepage, privacy policy (`/privasi`). JANGAN upload logo (memicu verifikasi brand)
-- QRIS statis belum diupload admin (tab QRIS). Batch 1 tutup sejak 08:04 WIB 14 Sep
+- QRIS statis SUDAH diupload (14 Sep 09:57 WIB). Batch 2 buka ("Start 14 September 2026"). Pesanan tes akun Google: #c79ba175 (Belum bayar)
+- Upload bukti dari sisi pembeli di web live BELUM pernah dicoba (bucket `bukti` masih kosong per 14 Sep) — tes Tolak/ACC user kemungkinan lewat dropdown status
+- Kode unik per akun SUDAH dikodekan (commit lokal): `migration-kode-unik.sql` BELUM dijalankan — JANGAN push sebelum migrasi (GET /api/pesanan/[id] & /pesanan butuh kolom `kode_unik`)
 - GitHub: `ramdotcode/po-kripik` (PUBLIK). Push via SSH alias `github.com-ramdotcode`; identitas git lokal ramdotcode <ramdotcode@gmail.com>
 - LIVE di https://kripik.ramcode.site — Vercel project `po-kripik` (preset Next.js, deploy otomatis dari push ke `main`, env lengkap). DNS Cloudflare: CNAME → Vercel, DNS only
 - Region: Supabase di AWS **ap-southeast-2 (Sydney)** → Vercel Function Region di-set **syd1**. Request pesanan ~0,4–0,9 dtk (dulu iad1 1–2 dtk, sin1 ~1,2 dtk)

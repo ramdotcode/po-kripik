@@ -419,7 +419,7 @@ export default function Bayar() {
           </div>
         )}
         <div className="kartu p-5 text-center">
-          <Nominal label="Scan QRIS di bawah & bayar" jumlah={order.total} />
+          <Nominal label="Scan QRIS di bawah & bayar" jumlah={order.total_bayar ?? order.total} />
           <div className="mx-auto mt-4 w-full max-w-xs rounded-3xl border-2 border-dashed border-brand-200 bg-white p-3">
             {qrisUrl === undefined ? (
               <div className="aspect-square w-full animate-pulse rounded-2xl bg-brand-100" />
@@ -432,7 +432,15 @@ export default function Bayar() {
               </p>
             )}
           </div>
-          <p className="mt-3 text-xs text-stone-500">Pastikan nominalnya pas sampai rupiah terakhir ya.</p>
+          {order.kode_unik ? (
+            <p className="mt-3 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">
+              Transfer <b>persis</b> sampai 3 digit terakhir.{" "}
+              <b className="font-mono">{String(order.kode_unik).padStart(3, "0")}</b> itu kode unik akunmu, biar
+              pembayaranmu gampang dicek admin.
+            </p>
+          ) : (
+            <p className="mt-3 text-xs text-stone-500">Pastikan nominalnya pas sampai rupiah terakhir ya.</p>
+          )}
         </div>
 
         <label
@@ -490,10 +498,27 @@ export default function Bayar() {
             </li>
           ))}
         </ul>
-        <div className="mt-1 flex items-center justify-between border-t border-dashed border-brand-200 pt-3">
-          <span className="font-bold">Total</span>
-          <span className="text-xl font-extrabold tabular-nums text-brand-700">{rupiah(order.total)}</span>
-        </div>
+        {order.kode_unik ? (
+          <div className="mt-1 space-y-1 border-t border-dashed border-brand-200 pt-3">
+            <p className="flex justify-between text-sm">
+              <span>Subtotal</span>
+              <span className="font-semibold tabular-nums">{rupiah(order.total)}</span>
+            </p>
+            <p className="flex justify-between text-sm text-stone-500">
+              <span>Kode unik akunmu</span>
+              <span className="tabular-nums">+{rupiah(order.kode_unik)}</span>
+            </p>
+            <p className="flex items-center justify-between pt-1">
+              <span className="font-bold">Total bayar</span>
+              <span className="text-xl font-extrabold tabular-nums text-brand-700">{rupiah(order.total_bayar)}</span>
+            </p>
+          </div>
+        ) : (
+          <div className="mt-1 flex items-center justify-between border-t border-dashed border-brand-200 pt-3">
+            <span className="font-bold">Total</span>
+            <span className="text-xl font-extrabold tabular-nums text-brand-700">{rupiah(order.total)}</span>
+          </div>
+        )}
         <div className="mt-3 space-y-2">
           {order.batch_note && (
             <p className="flex items-start gap-2 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">

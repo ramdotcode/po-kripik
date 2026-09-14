@@ -75,6 +75,8 @@ export default function Export({ batches }) {
             it.price,
             it.qty,
             it.price * it.qty,
+            o.kode_unik ? String(o.kode_unik).padStart(3, "0") : "",
+            (o.total || 0) + (o.kode_unik || 0),
             LABEL[o.status] || o.status,
             o.paid_at
               ? `${new Date(o.paid_at).toLocaleString("id-ID")}${o.paid_via === "midtrans" ? " (QRIS otomatis)" : ""}`
@@ -90,7 +92,7 @@ export default function Export({ batches }) {
       }
       downloadCsv(
         `pesanan-${namaFile}.csv`,
-        ["Batch", "Waktu", "Kode", "Nama", "WhatsApp", "Produk", "Harga", "Qty", "Subtotal", "Status", "Dibayar", "Catatan"],
+        ["Batch", "Waktu", "Kode", "Nama", "WhatsApp", "Produk", "Harga", "Qty", "Subtotal", "Kode unik", "Nominal transfer (per pesanan)", "Status", "Dibayar", "Catatan"],
         rows
       );
       setPesan({ ok: true, teks: `${rows.length} baris terunduh.` });

@@ -62,6 +62,11 @@ export async function POST(req) {
 
   const total = rows.reduce((s, r) => s + r.price * r.qty, 0);
 
+  // Kode unik 3 digit per akun, ditambahkan ke nominal transfer biar admin gampang
+  // mencocokkan mutasi. Gagal (mis. migrasi belum jalan) -> pesanan tetap dibuat tanpa kode.
+  const { data: kodeUnik, error: kodeErr } = await supabaseAdmin.rpc("ambil_kode_unik", { p_user: user.id });
+  if (kodeErr) console.error("[pesanan] kode unik gagal:", kodeErr.message);
+
   const { data: order, error: orderErr } = await supabaseAdmin
     .from("orders")
     .insert({
@@ -73,6 +78,7 @@ export async function POST(req) {
       batch_id: batch.id,
       user_id: user.id,
       customer_email: user.email || null,
+      ...(kodeUnik ? { kode_unik: kodeUnik } : {}),
     })
     .select("id")
     .single();
@@ -87,5 +93,5 @@ export async function POST(req) {
     return bad("Gagal menyimpan item: " + itemErr.message, 500);
   }
 
-  return NextResponse.json({ id: order.id, total, batch: batch.name });
+  return NextResponse.json({ id: order.id, total, kode_unik: kodeUnik || null, batch: batch.name });
 }

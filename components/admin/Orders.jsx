@@ -27,6 +27,9 @@ const STATUS = {
 const SUDAH_BAYAR = ["lunas", "diproses", "selesai"];
 const sudahBayar = (o) => Boolean(o.paid_at) || SUDAH_BAYAR.includes(o.status);
 const kodeOf = (o) => String(o.id).slice(0, 8);
+// Nominal yang seharusnya masuk di mutasi = total produk + kode unik akun pembeli
+const transferOf = (o) => (o.total || 0) + (o.kode_unik || 0);
+const kodeUnikOf = (o) => String(o.kode_unik).padStart(3, "0");
 const jumlahkan = (os) => os.reduce((s, o) => s + (o.total || 0), 0);
 const TOMBOL_TOLAK =
   "inline-flex items-center justify-center gap-2 rounded-full bg-red-50 text-sm font-bold text-red-700 ring-1 ring-red-200 transition active:scale-[0.98]";
@@ -67,7 +70,7 @@ function ModalBukti({ order, onTutup, onLunas, onTolak }) {
           <div className="min-w-0">
             <p className="font-extrabold">Bukti bayar</p>
             <p className="truncate text-xs text-stone-500">
-              {order.customer_name} · #{kodeOf(order)} · <b className="text-coklat-900">{rupiah(order.total)}</b>
+              {order.customer_name} · #{kodeOf(order)} · <b className="text-coklat-900">{rupiah(transferOf(order))}</b>
             </p>
           </div>
           <button
@@ -91,7 +94,7 @@ function ModalBukti({ order, onTutup, onLunas, onTolak }) {
           )}
         </div>
         <p className="mt-2 text-xs text-stone-500">
-          Cocokkan nominal di bukti dengan total {rupiah(order.total)}. File HEIC mungkin cuma bisa dibuka lewat
+          Cocokkan nominal di bukti dengan {rupiah(transferOf(order))}{order.kode_unik ? ` (termasuk kode unik ${kodeUnikOf(order)})` : ""}. File HEIC mungkin cuma bisa dibuka lewat
           “Ukuran penuh”.
         </p>
 
@@ -221,7 +224,9 @@ export default function Orders({ batches }) {
     return (
       (o.customer_name || "").toLowerCase().includes(kata) ||
       kodeOf(o).includes(kata.replace(/^#/, "")) ||
-      (angka.length >= 3 && (o.phone || "").replace(/\D/g, "").includes(angka))
+      (angka.length >= 3 && (o.phone || "").replace(/\D/g, "").includes(angka)) ||
+      // Ketik nominal dari mutasi (mis. 54037) -> ketemu pesanannya
+      (angka.length >= 3 && String(transferOf(o)).includes(angka))
     );
   });
 
@@ -294,7 +299,7 @@ export default function Orders({ batches }) {
               type="search"
               value={cari}
               onChange={(e) => setCari(e.target.value)}
-              placeholder="Cari nama, kode, atau no. WA"
+              placeholder="Cari nama, kode, no. WA, atau nominal"
               className="input h-11 rounded-full py-0 pl-10"
             />
           </label>
@@ -347,6 +352,11 @@ export default function Orders({ batches }) {
                           <span className="rounded-md bg-brand-50 px-1.5 py-0.5 font-mono text-[11px] text-coklat-700 ring-1 ring-brand-100">
                             #{kode}
                           </span>
+                          {o.kode_unik ? (
+                            <span className="rounded-md bg-amber-50 px-1.5 py-0.5 font-mono text-[11px] font-bold text-amber-800 ring-1 ring-amber-200">
+                              kode {kodeUnikOf(o)}
+                            </span>
+                          ) : null}
                         </p>
                         <p className="mt-0.5 text-xs text-stone-500">
                           {new Date(o.created_at).toLocaleString("id-ID", {
@@ -359,7 +369,14 @@ export default function Orders({ batches }) {
                         </p>
                         {o.customer_email && <p className="truncate text-xs text-stone-400">{o.customer_email}</p>}
                       </div>
-                      <p className="shrink-0 text-lg font-extrabold tabular-nums text-brand-700">{rupiah(o.total)}</p>
+                      <div className="shrink-0 text-right">
+                        <p className="text-lg font-extrabold tabular-nums text-brand-700">{rupiah(o.total)}</p>
+                        {o.kode_unik ? (
+                          <p className="text-[11px] font-semibold tabular-nums text-stone-500">
+                            transfer {rupiah(transferOf(o))}
+                          </p>
+                        ) : null}
+                      </div>
                     </div>
 
                     <div className="mt-2 flex flex-wrap items-center gap-2">

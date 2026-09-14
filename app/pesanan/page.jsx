@@ -25,6 +25,7 @@ export default function PesananSaya() {
   const uid = sesi?.user?.id;
   const [orders, setOrders] = useState(null);
   const [err, setErr] = useState("");
+  const [kodeAkun, setKodeAkun] = useState(null);
 
   // RLS: pembeli cuma bisa baca pesanan miliknya sendiri
   useEffect(() => {
@@ -32,11 +33,14 @@ export default function PesananSaya() {
     (async () => {
       const { data, error } = await supabase
         .from("orders")
-        .select("id, created_at, total, status, paid_at, proof_note, batches(name), order_items(product_name, qty)")
+        .select("id, created_at, total, kode_unik, status, paid_at, proof_note, batches(name), order_items(product_name, qty)")
         .eq("user_id", uid)
         .order("created_at", { ascending: false });
       if (error) setErr("Gagal memuat pesanan: " + error.message);
       setOrders(data || []);
+      // Kode unik akun (RLS: cuma milik sendiri). Belum ada = belum pernah pesan.
+      const { data: ku } = await supabase.from("kode_unik").select("kode").eq("user_id", uid).maybeSingle();
+      setKodeAkun(ku?.kode || null);
     })();
   }, [uid]);
 
@@ -76,6 +80,17 @@ export default function PesananSaya() {
       <HeaderHalaman judul="Pesanan Saya" sub={sesi.user.email} kembali="/" />
 
       <div className="space-y-3 px-4 pt-4">
+        {kodeAkun && (
+          <div className="kartu flex items-center justify-between gap-3 px-4 py-3">
+            <p className="text-sm leading-tight">
+              <b>Kode unik akunmu</b>
+              <span className="block text-xs text-stone-500">Selalu jadi 3 digit terakhir nominal transfer</span>
+            </p>
+            <span className="rounded-xl bg-brand-100 px-3 py-1.5 font-mono text-lg font-extrabold text-brand-700">
+              {String(kodeAkun).padStart(3, "0")}
+            </span>
+          </div>
+        )}
         {err && (
           <p role="alert" className="rounded-2xl bg-red-50 px-3 py-2.5 text-sm text-red-700">
             {err}
@@ -119,7 +134,7 @@ export default function PesananSaya() {
                           {o.batches?.name ? ` · ${o.batches.name}` : ""}
                         </p>
                       </div>
-                      <p className="shrink-0 text-lg font-extrabold tabular-nums text-brand-700">{rupiah(o.total)}</p>
+                      <p className="shrink-0 text-lg font-extrabold tabular-nums text-brand-700">{rupiah(o.total + (o.kode_unik || 0))}</p>
                     </div>
                     <p className="mt-2 line-clamp-2 text-sm text-coklat-700">
                       {(o.order_items || []).map((it) => `${it.qty}× ${it.product_name}`).join(", ")}

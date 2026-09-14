@@ -25,7 +25,7 @@ export async function GET(req, { params }) {
   const { data: order } = await supabaseAdmin
     .from("orders")
     .select(
-      "id, user_id, customer_name, total, status, notes, payment_proof_url, proof_note, paid_at, created_at, batches(name, note)"
+      "id, user_id, customer_name, total, kode_unik, status, notes, payment_proof_url, proof_note, paid_at, created_at, batches(name, note)"
     )
     .eq("id", id)
     .maybeSingle();
@@ -48,6 +48,9 @@ export async function GET(req, { params }) {
       id: order.id,
       customer_name: order.customer_name,
       total: order.total,
+      // Nominal yang harus ditransfer = total produk + kode unik akun
+      kode_unik: order.kode_unik || null,
+      total_bayar: order.total + (order.kode_unik || 0),
       status: order.status,
       notes: order.notes,
       created_at: order.created_at,
