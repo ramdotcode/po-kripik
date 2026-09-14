@@ -4,7 +4,19 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { rupiah } from "../../../lib/supabase";
-import { KONTAK_WA, waLink } from "../../../lib/toko";
+import { KONTAK_WA } from "../../../lib/toko";
+import { CaraPesan, FooterWa, HeaderHalaman, InfoAntar, Logo } from "../../../components/Brand";
+import {
+  IkonCentang,
+  IkonJam,
+  IkonKalender,
+  IkonPanahKanan,
+  IkonPanahKiri,
+  IkonQr,
+  IkonSalin,
+  IkonSilang,
+  IkonUnggah,
+} from "../../../components/Ikon";
 
 const POLL_MS = 4000;
 
@@ -29,7 +41,7 @@ function Countdown({ until, onHabis }) {
   const mm = String(Math.floor(detik / 60)).padStart(2, "0");
   const ss = String(detik % 60).padStart(2, "0");
   return (
-    <span className="font-mono font-bold">
+    <span className="font-extrabold tabular-nums">
       {mm}:{ss}
     </span>
   );
@@ -37,13 +49,53 @@ function Countdown({ until, onHabis }) {
 
 function Selesai({ judul, pesan }) {
   return (
-    <div className="m-4 rounded-2xl bg-green-50 p-6 text-center">
-      <p className="text-3xl">✅</p>
-      <p className="mt-2 font-bold text-green-700">{judul}</p>
-      <p className="mt-1 text-sm text-green-600">{pesan}</p>
-      <Link href="/" className="mt-4 inline-block font-semibold text-brand-600 underline">
-        ← Kembali ke katalog
+    <div className="kartu p-6 text-center">
+      <span className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-green-100 text-green-600 ring-8 ring-green-50">
+        <IkonCentang className="h-8 w-8" strokeWidth={3} />
+      </span>
+      <p className="mt-4 text-xl font-extrabold">{judul}</p>
+      <p className="mt-1 text-sm text-stone-600">{pesan}</p>
+      <Link href="/" className="btn-lembut mt-5 h-11 px-5 text-sm">
+        <IkonPanahKiri className="h-4 w-4" strokeWidth={2.5} />
+        Kembali ke katalog
       </Link>
+    </div>
+  );
+}
+
+// Judul kartu bayar: label kecil + nominal besar
+function Nominal({ label, jumlah }) {
+  return (
+    <>
+      <p className="text-sm text-stone-500">{label}</p>
+      <p className="text-3xl font-extrabold tabular-nums text-brand-700">{rupiah(jumlah)}</p>
+    </>
+  );
+}
+
+// Link /bayar/[id] satu-satunya jalan balik ke pesanan, jadi ajak pembeli menyimpannya.
+function SalinLink() {
+  const [ok, setOk] = useState(false);
+  const salin = async () => {
+    const url = window.location.href;
+    try {
+      await navigator.clipboard.writeText(url);
+      setOk(true);
+      setTimeout(() => setOk(false), 2000);
+    } catch {
+      window.prompt("Salin link pesanan ini:", url);
+    }
+  };
+  return (
+    <div className="kartu mx-4 mt-4 flex items-center gap-3 p-4">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-bold">Simpan link pesanan ini</p>
+        <p className="text-xs text-stone-500">Buat cek status atau bayar lagi nanti.</p>
+      </div>
+      <button type="button" onClick={salin} className="btn-lembut h-10 shrink-0 px-4 text-sm">
+        {ok ? <IkonCentang className="h-4 w-4" strokeWidth={2.6} /> : <IkonSalin className="h-4 w-4" />}
+        {ok ? "Tersalin" : "Salin"}
+      </button>
     </div>
   );
 }
@@ -143,167 +195,210 @@ export default function Bayar() {
     e.target.value = ""; // biar file yang sama bisa dipilih ulang kalau gagal
   };
 
-  if (loading) return <p className="p-8 text-center text-sm text-stone-500">Memuat…</p>;
-  if (!order)
+  if (loading)
     return (
-      <div className="p-8 text-center">
-        <p className="text-sm text-stone-500">Pesanan tidak ditemukan.</p>
-        <Link href="/" className="mt-3 inline-block font-semibold text-brand-600 underline">
-          ← Kembali
-        </Link>
-      </div>
+      <main className="space-y-4 px-4 pt-5" aria-busy="true">
+        <div className="h-12 w-48 animate-pulse rounded-2xl bg-brand-100" />
+        <div className="h-24 animate-pulse rounded-3xl bg-brand-100/80" />
+        <div className="h-72 animate-pulse rounded-3xl bg-brand-100/80" />
+      </main>
     );
 
-  return (
-    <main className="pb-10">
-      <header className="sticky top-0 z-10 bg-brand-500 px-4 py-4 text-white shadow">
-        <h1 className="text-lg font-extrabold">Pembayaran</h1>
-        <p className="text-xs text-orange-100">
-          Pesanan #{String(order.id).slice(0, 8)}
-          {order.batch_name ? ` • ${order.batch_name}` : ""}
-        </p>
-      </header>
+  if (!order)
+    return (
+      <main className="px-6 pt-20 text-center">
+        <Logo className="mx-auto h-20 w-20 grayscale" />
+        <p className="mt-4 text-lg font-extrabold">Pesanan tidak ditemukan</p>
+        <p className="mt-1 text-sm text-stone-500">Cek lagi link-nya, atau tanya kami lewat WhatsApp.</p>
+        <Link href="/" className="btn-oranye mt-5 h-12 px-6">
+          <IkonPanahKiri className="h-4 w-4" strokeWidth={2.5} />
+          Kembali ke katalog
+        </Link>
+        <FooterWa className="pt-8" teks="Butuh bantuan? WhatsApp" pesan="Halo, link pesananku nggak bisa dibuka" />
+      </main>
+    );
 
-      <div className="m-4 rounded-2xl bg-white p-4 shadow-sm">
-        <p className="mb-2 text-sm font-semibold text-stone-500">Ringkasan pesanan</p>
-        {items.map((it) => (
-          <div key={it.id} className="flex justify-between py-1 text-sm">
-            <span>
-              {it.product_name} × {it.qty}
-            </span>
-            <span className="font-semibold">{rupiah(it.price * it.qty)}</span>
-          </div>
-        ))}
-        <div className="mt-2 flex justify-between border-t border-stone-100 pt-2">
-          <span className="font-bold">Total</span>
-          <span className="text-lg font-extrabold text-brand-700">{rupiah(order.total)}</span>
-        </div>
-        {order.batch_note && (
-          <p className="mt-2 border-t border-stone-100 pt-2 text-xs text-stone-500">
-            {order.batch_note}
-          </p>
-        )}
+  const kode = String(order.id).slice(0, 8);
+  const batal = order.status === "batal";
+  const sapaan = order.sudah_bayar
+    ? "pembayaranmu sudah kami terima."
+    : batal
+    ? "pesanan ini sudah dibatalkan."
+    : order.sudah_upload && !order.bayar_otomatis
+    ? "buktimu lagi kami cek."
+    : "tinggal bayar pakai QRIS ya.";
+
+  let bagianBayar;
+  if (order.sudah_bayar) {
+    bagianBayar = (
+      <Selesai judul="Pembayaran berhasil! 🎉" pesan="Pesananmu sudah lunas. Kami hubungi via WhatsApp ya." />
+    );
+  } else if (batal) {
+    bagianBayar = (
+      <div className="rounded-3xl border border-stone-200 bg-stone-100 p-6 text-center">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-stone-200 text-stone-500">
+          <IkonSilang className="h-7 w-7" />
+        </span>
+        <p className="mt-3 font-extrabold">Pesanan ini sudah dibatalkan</p>
+        <p className="mt-1 text-sm text-stone-500">Ada pertanyaan? Chat kami di WhatsApp.</p>
       </div>
+    );
+  } else if (order.bayar_otomatis) {
+    // ---------- QRIS lewat Midtrans Snap ----------
+    bagianBayar = (
+      <>
+        {qrHabis ? (
+          <div className="kartu p-6 text-center">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-brand-100 text-brand-600">
+              <IkonJam className="h-7 w-7" />
+            </span>
+            <p className="mt-3 text-lg font-extrabold">QR sudah kedaluwarsa</p>
+            <p className="mt-1 text-sm text-stone-500">Belum sempat bayar? Bikin QR baru aja.</p>
+            <button onClick={bikinQr} disabled={qrLoading} className="btn-oranye mt-5 h-12 w-full">
+              {qrLoading ? "Menyiapkan…" : "Bikin QR Baru"}
+            </button>
+          </div>
+        ) : qr ? (
+          <>
+            <div className="kartu p-5 text-center">
+              <span className="mx-auto mb-3 grid h-14 w-14 place-items-center rounded-2xl bg-brand-100 text-brand-600">
+                <IkonQr className="h-7 w-7" strokeWidth={1.8} />
+              </span>
+              <Nominal label="Bayar pakai QRIS" jumlah={qr.amount} />
+              <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-700">
+                <IkonJam className="h-3.5 w-3.5" strokeWidth={2.4} />
+                Selesaikan dalam <Countdown until={qr.expiry_time} onHabis={() => setQrHabis(true)} />
+              </p>
+              <a href={qr.pay_url} className="btn-oranye mt-5 h-14 w-full text-base">
+                Bayar dengan QRIS
+                <IkonPanahKanan className="h-5 w-5" strokeWidth={2.5} />
+              </a>
+              <p className="mt-3 text-xs leading-relaxed text-stone-500">
+                Kamu dibawa ke halaman pembayaran Midtrans. QR-nya bisa di-scan dari HP lain atau diunduh lalu
+                di-upload dari aplikasi e-wallet / m-banking. Setelah bayar, kamu balik ke sini otomatis.
+              </p>
+            </div>
 
-      {order.sudah_bayar ? (
-        <Selesai
-          judul="Pembayaran berhasil! 🎉"
-          pesan="Pesananmu sudah lunas. Kami hubungi via WhatsApp ya."
-        />
-      ) : order.status === "batal" ? (
-        <div className="m-4 rounded-2xl bg-stone-200 p-6 text-center text-sm font-semibold text-stone-600">
-          Pesanan ini sudah dibatalkan.
-        </div>
-      ) : order.bayar_otomatis ? (
-        // ---------- QRIS lewat Midtrans Snap ----------
-        <div className="m-4">
-          {qrHabis ? (
-            <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
-              <p className="text-3xl">⌛</p>
-              <p className="mt-2 font-bold">QR sudah kedaluwarsa</p>
-              <p className="mt-1 text-sm text-stone-500">Belum sempat bayar? Bikin QR baru aja.</p>
+            <div className="mt-3 flex items-center gap-3 rounded-2xl bg-green-50 px-4 py-3 text-sm font-semibold text-green-800">
+              <span className="relative flex h-2.5 w-2.5 shrink-0">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-green-400 opacity-75 motion-reduce:hidden" />
+                <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-green-500" />
+              </span>
+              Menunggu pembayaran… halaman ini otomatis berubah begitu uang masuk
+            </div>
+          </>
+        ) : (
+          !error && (
+            <div className="kartu flex h-72 animate-pulse items-center justify-center text-sm text-stone-500">
+              Menyiapkan QRIS…
+            </div>
+          )
+        )}
+
+        {error && (
+          <div role="alert" className="mt-3 rounded-2xl bg-red-50 p-4 text-center">
+            <p className="text-sm text-red-700">{error}</p>
+            {!qr && (
               <button
                 onClick={bikinQr}
                 disabled={qrLoading}
-                className="mt-4 w-full rounded-2xl bg-brand-600 py-3 font-bold text-white disabled:opacity-50"
+                className="mt-3 font-semibold text-brand-600 underline disabled:opacity-50"
               >
-                {qrLoading ? "Menyiapkan…" : "Bikin QR Baru"}
+                Coba lagi
               </button>
-            </div>
-          ) : qr ? (
-            <>
-              <div className="rounded-2xl bg-white p-5 text-center shadow-sm">
-                <p className="text-sm font-semibold">
-                  Bayar <b className="text-brand-700">{rupiah(qr.amount)}</b> pakai QRIS
-                </p>
-                <p className="mt-0.5 text-xs text-stone-500">
-                  Selesaikan dalam <Countdown until={qr.expiry_time} onHabis={() => setQrHabis(true)} />
-                </p>
-                <a
-                  href={qr.pay_url}
-                  className="mt-4 block w-full rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg"
-                >
-                  Bayar dengan QRIS →
-                </a>
-                <p className="mt-3 text-xs text-stone-400">
-                  Kamu dibawa ke halaman pembayaran Midtrans. QR-nya bisa di-scan dari HP lain atau
-                  diunduh lalu di-upload dari aplikasi e-wallet / m-banking. Setelah bayar, kamu
-                  balik ke sini otomatis.
-                </p>
-              </div>
-
-              <div className="mt-3 flex items-center justify-center gap-2 rounded-2xl bg-brand-100 px-4 py-3 text-sm font-semibold text-brand-700">
-                <span className="h-2 w-2 animate-pulse rounded-full bg-brand-600" />
-                Menunggu pembayaran… halaman ini otomatis berubah begitu uang masuk
-              </div>
-            </>
-          ) : (
-            !error && (
-              <p className="p-6 text-center text-sm text-stone-500">Menyiapkan QRIS…</p>
-            )
-          )}
-
-          {error && (
-            <div className="mt-3 rounded-2xl bg-red-50 p-4 text-center">
-              <p className="text-sm text-red-600">{error}</p>
-              {!qr && (
-                <button
-                  onClick={bikinQr}
-                  disabled={qrLoading}
-                  className="mt-3 font-semibold text-brand-600 underline disabled:opacity-50"
-                >
-                  Coba lagi
-                </button>
-              )}
-            </div>
-          )}
-        </div>
-      ) : order.sudah_upload ? (
-        <Selesai
-          judul="Bukti pembayaran diterima!"
-          pesan="Pesananmu sedang kami cek. Kami hubungi via WhatsApp ya."
-        />
-      ) : (
-        // ---------- QRIS statis + upload bukti (Midtrans belum diaktifkan) ----------
-        <>
-          <div className="m-4 rounded-2xl bg-white p-4 text-center shadow-sm">
-            <p className="mb-3 text-sm font-semibold">
-              Scan QRIS di bawah, bayar <b className="text-brand-700">{rupiah(order.total)}</b>
-            </p>
+            )}
+          </div>
+        )}
+      </>
+    );
+  } else if (order.sudah_upload) {
+    bagianBayar = (
+      <Selesai
+        judul="Bukti pembayaran diterima!"
+        pesan="Pesananmu sedang kami cek. Kami hubungi via WhatsApp ya."
+      />
+    );
+  } else {
+    // ---------- QRIS statis + upload bukti (Midtrans belum diaktifkan) ----------
+    bagianBayar = (
+      <>
+        <div className="kartu p-5 text-center">
+          <Nominal label="Scan QRIS di bawah & bayar" jumlah={order.total} />
+          <div className="mx-auto mt-4 w-full max-w-xs rounded-3xl border-2 border-dashed border-brand-200 bg-white p-3">
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/qris.png" alt="QRIS" className="mx-auto w-full max-w-xs rounded-xl" />
+            <img src="/qris.png" alt="QRIS toko" className="w-full rounded-2xl" />
           </div>
+          <p className="mt-3 text-xs text-stone-500">Pastikan nominalnya pas sampai rupiah terakhir ya.</p>
+        </div>
 
-          <div className="m-4">
-            <label className="block w-full cursor-pointer rounded-2xl bg-brand-600 py-4 text-center font-bold text-white shadow-lg">
-              {uploading ? "Mengupload…" : "📤 Upload Bukti Pembayaran"}
-              <input
-                type="file"
-                accept="image/*"
-                onChange={uploadProof}
-                disabled={uploading}
-                className="hidden"
-              />
-            </label>
-            {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
-            <p className="mt-2 text-center text-xs text-stone-400">
-              Screenshot bukti transfer dari aplikasi pembayaranmu (maks 5 MB)
-            </p>
-          </div>
-        </>
-      )}
-
-      <p className="px-4 pt-2 text-center text-xs text-stone-400">
-        Ada kendala pembayaran? WhatsApp{" "}
-        <a
-          href={waLink(`Halo, soal pesanan #${String(order.id).slice(0, 8)}`)}
-          target="_blank"
-          rel="noreferrer"
-          className="font-semibold text-brand-600 underline"
+        <label
+          aria-disabled={uploading || undefined}
+          className={`btn-oranye mt-3 h-14 w-full cursor-pointer text-base ${
+            uploading ? "pointer-events-none opacity-60" : ""
+          }`}
         >
-          {KONTAK_WA}
-        </a>
+          <IkonUnggah className="h-5 w-5" strokeWidth={2.4} />
+          {uploading ? "Mengupload…" : "Upload Bukti Pembayaran"}
+          <input type="file" accept="image/*" onChange={uploadProof} disabled={uploading} className="hidden" />
+        </label>
+        {error && (
+          <p role="alert" className="mt-3 flex items-start gap-2 rounded-2xl bg-red-50 px-3 py-2.5 text-sm text-red-700">
+            <IkonSilang className="mt-0.5 h-4 w-4 shrink-0" />
+            {error}
+          </p>
+        )}
+        <p className="mt-2 text-center text-xs text-stone-500">
+          Screenshot bukti transfer dari aplikasi pembayaranmu (maks 5 MB)
+        </p>
+      </>
+    );
+  }
+
+  return (
+    <main className="pb-10">
+      <HeaderHalaman
+        judul="Pembayaran"
+        sub={`Pesanan #${kode}${order.batch_name ? ` · ${order.batch_name}` : ""}`}
+      />
+
+      <p className="px-4 pt-4 text-[15px] text-coklat-700">
+        Hai <b className="text-coklat-900">{order.customer_name}</b>, {sapaan}
       </p>
+
+      {!batal && <CaraPesan judul={null} aktif={order.sudah_bayar ? 3 : 2} className="mx-4 mt-3" />}
+
+      <div className="mx-4 mt-4">{bagianBayar}</div>
+
+      <div className="kartu mx-4 mt-4 p-4">
+        <p className="text-xs font-bold uppercase tracking-wider text-stone-500">Ringkasan pesanan</p>
+        <ul className="mt-1 divide-y divide-brand-100">
+          {items.map((it) => (
+            <li key={it.id} className="flex justify-between gap-3 py-2 text-sm">
+              <span>
+                {it.product_name} <span className="text-stone-400">× {it.qty}</span>
+              </span>
+              <span className="shrink-0 font-semibold tabular-nums">{rupiah(it.price * it.qty)}</span>
+            </li>
+          ))}
+        </ul>
+        <div className="mt-1 flex items-center justify-between border-t border-dashed border-brand-200 pt-3">
+          <span className="font-bold">Total</span>
+          <span className="text-xl font-extrabold tabular-nums text-brand-700">{rupiah(order.total)}</span>
+        </div>
+        <div className="mt-3 space-y-2">
+          {order.batch_note && (
+            <p className="flex items-start gap-2 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">
+              <IkonKalender className="h-4 w-4 shrink-0 text-brand-600" />
+              {order.batch_note}
+            </p>
+          )}
+          <InfoAntar />
+        </div>
+      </div>
+
+      <SalinLink />
+
+      <FooterWa className="pt-6" teks="Ada kendala pembayaran? WhatsApp" pesan={`Halo, soal pesanan #${kode}`} />
     </main>
   );
 }

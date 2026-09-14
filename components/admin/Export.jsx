@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { downloadCsv, slug } from "../../lib/csv";
+import { IkonCentang, IkonChevronBawah, IkonGrafik, IkonTabel, IkonUnduh } from "../Ikon";
 
 const LABEL = {
   baru: "Baru",
@@ -13,10 +14,32 @@ const LABEL = {
   batal: "Batal",
 };
 
+function OpsiEkspor({ Ikon, judul, keterangan, sibuk, disabled, onClick }) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      className="kartu flex w-full items-center gap-4 p-4 text-left transition active:scale-[0.99] disabled:opacity-60"
+    >
+      <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-brand-100 text-brand-600">
+        <Ikon className="h-6 w-6" strokeWidth={1.8} />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block font-extrabold">{sibuk ? "Menyiapkan…" : judul}</span>
+        <span className="mt-0.5 block text-xs leading-snug text-stone-500">{keterangan}</span>
+      </span>
+      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-sm">
+        <IkonUnduh className="h-4 w-4" strokeWidth={2.4} />
+      </span>
+    </button>
+  );
+}
+
 export default function Export({ batches }) {
   const [pilih, setPilih] = useState(batches.find((b) => b.status === "buka")?.id || "semua");
   const [busy, setBusy] = useState("");
-  const [pesan, setPesan] = useState("");
+  const [pesan, setPesan] = useState(null); // { ok, teks }
 
   const namaFile = pilih === "semua" ? "semua-batch" : slug(batches.find((b) => b.id === pilih)?.name);
 
@@ -35,7 +58,7 @@ export default function Export({ batches }) {
 
   const exportPesanan = async () => {
     setBusy("pesanan");
-    setPesan("");
+    setPesan(null);
     try {
       const orders = await ambil();
       const rows = [];
@@ -61,7 +84,7 @@ export default function Export({ batches }) {
         }
       }
       if (rows.length === 0) {
-        setPesan("Belum ada pesanan di batch ini.");
+        setPesan({ ok: false, teks: "Belum ada pesanan di batch ini." });
         setBusy("");
         return;
       }
@@ -70,16 +93,16 @@ export default function Export({ batches }) {
         ["Batch", "Waktu", "Kode", "Nama", "WhatsApp", "Produk", "Harga", "Qty", "Subtotal", "Status", "Dibayar", "Catatan"],
         rows
       );
-      setPesan(`✅ ${rows.length} baris terunduh.`);
+      setPesan({ ok: true, teks: `${rows.length} baris terunduh.` });
     } catch (e) {
-      setPesan("Gagal ekspor: " + e.message);
+      setPesan({ ok: false, teks: "Gagal ekspor: " + e.message });
     }
     setBusy("");
   };
 
   const exportRekap = async () => {
     setBusy("rekap");
-    setPesan("");
+    setPesan(null);
     try {
       const orders = await ambil();
       // Yang batal tidak dihitung — ini dipakai buat tahu harus produksi berapa
@@ -97,63 +120,72 @@ export default function Export({ batches }) {
         .sort((a, b) => b[1].qty - a[1].qty)
         .map(([nama, v]) => [nama, v.qty, v.total]);
       if (rows.length === 0) {
-        setPesan("Belum ada pesanan di batch ini.");
+        setPesan({ ok: false, teks: "Belum ada pesanan di batch ini." });
         setBusy("");
         return;
       }
       rows.push(["TOTAL", rows.reduce((s, r) => s + r[1], 0), rows.reduce((s, r) => s + r[2], 0)]);
       downloadCsv(`rekap-produk-${namaFile}.csv`, ["Produk", "Total Qty", "Total Rupiah"], rows);
-      setPesan(`✅ ${rows.length - 1} produk terunduh.`);
+      setPesan({ ok: true, teks: `${rows.length - 1} produk terunduh.` });
     } catch (e) {
-      setPesan("Gagal ekspor: " + e.message);
+      setPesan({ ok: false, teks: "Gagal ekspor: " + e.message });
     }
     setBusy("");
   };
 
   return (
     <div className="space-y-3 p-4">
-      <div className="rounded-2xl bg-white p-4 shadow-sm">
-        <p className="mb-2 text-sm font-semibold text-stone-500">Batch yang diekspor</p>
-        <select
-          value={pilih}
-          onChange={(e) => setPilih(e.target.value)}
-          className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm"
-        >
-          <option value="semua">Semua batch</option>
-          {batches.map((b) => (
-            <option key={b.id} value={b.id}>
-              {b.name} {b.status === "buka" ? "(buka)" : ""}
-            </option>
-          ))}
-        </select>
+      <div className="kartu space-y-1.5 p-4">
+        <label htmlFor="ekspor-batch" className="text-sm font-semibold">
+          Batch yang diekspor
+        </label>
+        <div className="relative">
+          <select
+            id="ekspor-batch"
+            value={pilih}
+            onChange={(e) => setPilih(e.target.value)}
+            className="h-11 w-full appearance-none rounded-full border border-brand-100 bg-white pl-4 pr-10 text-sm font-semibold focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-100"
+          >
+            <option value="semua">Semua batch</option>
+            {batches.map((b) => (
+              <option key={b.id} value={b.id}>
+                {b.name} {b.status === "buka" ? "(buka)" : ""}
+              </option>
+            ))}
+          </select>
+          <IkonChevronBawah className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2" />
+        </div>
       </div>
 
-      <button
+      <OpsiEkspor
+        Ikon={IkonTabel}
+        judul="Pesanan lengkap"
+        keterangan="Satu baris per produk per pesanan — nama, WhatsApp, status, dan catatan."
+        sibuk={busy === "pesanan"}
         disabled={!!busy}
         onClick={exportPesanan}
-        className="w-full rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg disabled:opacity-50"
-      >
-        {busy === "pesanan" ? "Menyiapkan…" : "📋 Ekspor Pesanan (detail)"}
-      </button>
-      <p className="px-1 text-xs text-stone-400">
-        Satu baris per produk per pesanan — lengkap dengan nama, WhatsApp, status, dan catatan.
-      </p>
-
-      <button
+      />
+      <OpsiEkspor
+        Ikon={IkonGrafik}
+        judul="Rekap per produk"
+        keterangan="Total qty tiap produk — buat tahu harus bikin berapa. Pesanan batal nggak dihitung."
+        sibuk={busy === "rekap"}
         disabled={!!busy}
         onClick={exportRekap}
-        className="w-full rounded-2xl bg-stone-800 py-4 font-bold text-white shadow-lg disabled:opacity-50"
-      >
-        {busy === "rekap" ? "Menyiapkan…" : "🍳 Rekap per Produk"}
-      </button>
-      <p className="px-1 text-xs text-stone-400">
-        Total qty tiap produk — buat tahu harus bikin berapa banyak. Pesanan batal tidak dihitung.
-      </p>
+      />
 
-      {pesan && <p className="pt-1 text-center text-sm text-stone-600">{pesan}</p>}
-      <p className="pt-2 text-center text-xs text-stone-400">
-        File CSV, bisa langsung dibuka di Excel atau Google Sheets.
-      </p>
+      {pesan && (
+        <p
+          role="status"
+          className={`flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-semibold ${
+            pesan.ok ? "bg-green-50 text-green-800" : "bg-brand-100 text-brand-700"
+          }`}
+        >
+          {pesan.ok && <IkonCentang className="h-4 w-4" strokeWidth={2.6} />}
+          {pesan.teks}
+        </p>
+      )}
+      <p className="text-center text-xs text-stone-500">File CSV, bisa langsung dibuka di Excel atau Google Sheets.</p>
     </div>
   );
 }

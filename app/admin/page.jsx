@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "../../lib/supabase";
+import { Logo } from "../../components/Brand";
+import { IkonGembok, IkonKeluar, IkonSilang } from "../../components/Ikon";
 import Orders from "../../components/admin/Orders";
 import Products from "../../components/admin/Products";
 import Batches from "../../components/admin/Batches";
@@ -13,6 +15,18 @@ const TABS = [
   ["produk", "Produk"],
   ["ekspor", "Ekspor"],
 ];
+
+function Merek() {
+  return (
+    <div className="text-center">
+      <Logo className="mx-auto h-20 w-20" />
+      <p className="mt-2 font-display text-3xl leading-none">PO KRIPIK</p>
+      <span className="mt-2 inline-block rounded-full bg-coklat-900 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-white">
+        Admin
+      </span>
+    </div>
+  );
+}
 
 function Login() {
   const [email, setEmail] = useState("");
@@ -36,50 +50,78 @@ function Login() {
   };
 
   return (
-    <form onSubmit={masuk} className="p-8">
-      <h1 className="mb-1 text-center text-lg font-extrabold">🔐 Admin PO Kripik</h1>
-      <p className="mb-5 text-center text-sm text-stone-500">Masuk buat kelola pesanan</p>
-      <input
-        type="email"
-        required
-        autoComplete="username"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        placeholder="Email admin"
-        className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm outline-brand-500"
-      />
-      <input
-        type="password"
-        required
-        autoComplete="current-password"
-        value={pw}
-        onChange={(e) => setPw(e.target.value)}
-        placeholder="Password"
-        className="mt-2 w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm outline-brand-500"
-      />
-      {err && <p className="mt-2 text-sm text-red-600">{err}</p>}
-      <button
-        disabled={busy}
-        className="mt-3 w-full rounded-2xl bg-brand-600 py-3 font-bold text-white disabled:opacity-50"
-      >
-        {busy ? "Memeriksa…" : "Masuk"}
-      </button>
-    </form>
+    <main className="px-4 pb-10 pt-14">
+      <Merek />
+      <form onSubmit={masuk} className="kartu mt-6 space-y-4 p-5">
+        <div>
+          <p className="flex items-center gap-2 text-lg font-extrabold">
+            <IkonGembok className="h-5 w-5 text-brand-600" />
+            Masuk dulu
+          </p>
+          <p className="text-sm text-stone-500">Buat kelola pesanan, batch, dan produk.</p>
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="email" className="text-sm font-semibold">
+            Email
+          </label>
+          <input
+            id="email"
+            type="email"
+            required
+            autoComplete="username"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="nama@email.com"
+            className="input"
+          />
+        </div>
+        <div className="space-y-1.5">
+          <label htmlFor="password" className="text-sm font-semibold">
+            Password
+          </label>
+          <input
+            id="password"
+            type="password"
+            required
+            autoComplete="current-password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            className="input"
+          />
+        </div>
+        {err && (
+          <p role="alert" className="flex items-start gap-2 rounded-2xl bg-red-50 px-3 py-2.5 text-sm text-red-700">
+            <IkonSilang className="mt-0.5 h-4 w-4 shrink-0" />
+            {err}
+          </p>
+        )}
+        <button disabled={busy} className="btn-oranye h-12 w-full">
+          {busy ? "Memeriksa…" : "Masuk"}
+        </button>
+      </form>
+    </main>
   );
 }
 
 function Ditolak({ onKeluar }) {
   return (
-    <div className="p-8 text-center">
-      <p className="text-3xl">🚫</p>
-      <p className="mt-2 font-bold">Akun ini bukan admin.</p>
-      <p className="mt-1 text-sm text-stone-500">
-        Daftarkan dulu user-nya ke tabel <code>admins</code> lewat SQL Editor Supabase.
-      </p>
-      <button onClick={onKeluar} className="mt-4 font-semibold text-brand-600 underline">
-        Keluar
-      </button>
-    </div>
+    <main className="px-4 pb-10 pt-14">
+      <Merek />
+      <div className="kartu mt-6 p-6 text-center">
+        <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-red-50 text-red-600">
+          <IkonSilang className="h-7 w-7" />
+        </span>
+        <p className="mt-3 text-lg font-extrabold">Akun ini bukan admin</p>
+        <p className="mt-1 text-sm text-stone-500">
+          Daftarkan dulu user-nya ke tabel <code className="rounded bg-brand-50 px-1">admins</code> lewat SQL
+          Editor Supabase.
+        </p>
+        <button onClick={onKeluar} className="btn-lembut mt-5 h-11 px-5 text-sm">
+          <IkonKeluar className="h-4 w-4" />
+          Keluar
+        </button>
+      </div>
+    </main>
   );
 }
 
@@ -129,38 +171,69 @@ export default function Admin() {
   if (session === undefined) return null;
   if (!session) return <Login />;
   if (isAdmin === null)
-    return <p className="p-8 text-center text-sm text-stone-500">Memeriksa akses…</p>;
+    return (
+      <main className="px-4 pt-14 text-center">
+        <Logo className="mx-auto h-16 w-16 animate-pulse" />
+        <p className="mt-3 text-sm text-stone-500">Memeriksa akses…</p>
+      </main>
+    );
   if (!isAdmin) return <Ditolak onKeluar={keluar} />;
 
   const batchBuka = batches.find((b) => b.status === "buka");
 
   return (
     <main className="pb-10">
-      <header className="sticky top-0 z-10 bg-stone-800 px-4 py-4 text-white shadow">
-        <div className="flex items-start justify-between">
-          <div>
-            <h1 className="text-lg font-extrabold">⚙️ Admin PO Kripik</h1>
-            <p className="text-xs text-stone-400">
-              {batchBuka ? `🟢 ${batchBuka.name} lagi buka` : "🔴 Semua batch tutup"}
+      <header className="sticky top-0 z-20 border-b border-brand-100 bg-brand-50/90 px-4 pb-3 pt-4 backdrop-blur">
+        <div className="flex items-center gap-3">
+          <Logo className="h-10 w-10 shrink-0" />
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-2 font-display text-xl leading-none">
+              PO KRIPIK
+              <span className="rounded-full bg-coklat-900 px-2 py-0.5 font-sans text-[10px] font-bold uppercase tracking-wider text-white">
+                Admin
+              </span>
             </p>
+            <button
+              type="button"
+              onClick={() => setTab("batch")}
+              className="mt-1 flex max-w-full items-center gap-1.5 text-xs font-semibold text-coklat-700"
+            >
+              <span
+                className={`h-2 w-2 shrink-0 rounded-full ${
+                  batchBuka ? "bg-green-500 ring-4 ring-green-100" : "bg-stone-400 ring-4 ring-stone-200"
+                }`}
+              />
+              <span className="truncate">{batchBuka ? `${batchBuka.name} lagi buka` : "Semua batch tutup"}</span>
+            </button>
           </div>
-          <button onClick={keluar} className="text-xs font-semibold text-stone-300 underline">
+          <button type="button" onClick={keluar} className="btn-lembut h-9 shrink-0 px-3 text-xs">
+            <IkonKeluar className="h-4 w-4" />
             Keluar
           </button>
         </div>
-        <div className="mt-3 flex gap-2 overflow-x-auto">
+
+        <nav
+          role="tablist"
+          aria-label="Menu admin"
+          className="mt-3 grid grid-cols-4 gap-1 rounded-full border border-brand-100 bg-white p-1 shadow-sm"
+        >
           {TABS.map(([id, label]) => (
             <button
               key={id}
+              type="button"
+              role="tab"
+              aria-selected={tab === id}
               onClick={() => setTab(id)}
-              className={`shrink-0 rounded-full px-4 py-1.5 text-sm font-semibold ${
-                tab === id ? "bg-brand-500 text-white" : "bg-stone-700 text-stone-300"
+              className={`h-9 rounded-full text-[13px] font-bold transition ${
+                tab === id
+                  ? "bg-gradient-to-b from-brand-500 to-brand-600 text-white shadow-sm"
+                  : "text-coklat-700 hover:bg-brand-50"
               }`}
             >
               {label}
             </button>
           ))}
-        </div>
+        </nav>
       </header>
 
       {tab === "pesanan" && <Orders batches={batches} />}

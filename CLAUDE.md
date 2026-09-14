@@ -16,6 +16,7 @@ Pesanan dikelompokkan per **batch PO** yang dibuka/ditutup dari halaman admin.
   Kalau kosong/placeholder → fallback QRIS statis (`public/qris.png`) + upload bukti ke bucket `bukti` (privat)
 - Pola Midtrans mengikuti project `../elevra-grad-main` (supabase/functions/midtrans-payment & midtrans-callback)
 - Tanpa ongkir — total = harga × qty saja. Fee MDR TIDAK dibebankan ke pembeli
+- Pengantaran KHUSUS ke Capital Place (tulis "Capital Place" saja, tanpa "Indosat") (`LOKASI_ANTAR` di `lib/toko.js`) — tampil di katalog (bawah hero), kotak total keranjang, ringkasan bayar (`InfoAntar`), dan meta description
 
 ## Halaman
 - `/` — katalog (`products` aktif) + banner batch. Kalau tidak ada batch `status='buka'`: tombol pesan mati, gambar grayscale, keranjang otomatis dikosongkan
@@ -82,7 +83,13 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - Pakai `rupiah()` dari `lib/supabase.js` untuk format harga
 - CSV lewat `lib/csv.js` (`downloadCsv`, `slug`) — tanpa library tambahan
 - Jangan tambah TypeScript/library baru tanpa perlu (`server-only` & SDK `midtrans-client` sengaja tidak dipakai — cukup fetch)
-- Jaga tampilan mobile-first: container `max-w-md`, tombol besar, rounded-2xl
+- Jaga tampilan mobile-first: container `max-w-md`, tombol besar (≥ 44px), kartu rounded-3xl, tombol pill
+- UI pembeli (redesign 14 Sep 2026, ikut mockup user): font `next/font` Plus Jakarta Sans (semua teks) + Lilita One (`font-display`, cuma logo & stiker); warna teks `coklat-900`
+  - Kelas bersama di `app/globals.css`: `.btn-oranye` (CTA gradasi), `.btn-lembut`, `.kartu`, `.input`
+  - `components/Brand.jsx`: Logo (SVG keranjang, sama dengan `app/icon.svg`), CaraPesan (prop `aktif` 1–3 dipakai di halaman bayar), Stepper, HeaderHalaman, FooterWa, Stempel, hiasan
+  - `components/Ikon.jsx`: ikon SVG gaya Lucide digambar manual — JANGAN tambah library ikon
+  - Katalog: hero batch (foto `rengginang.jpg` + stiker "Stok terbatas!"), Cara Pesan, dropdown Urutkan (client-side), bar keranjang melayang
+  - Admin ikut gaya yang sama: header terang sticky + tab pill. Pesanan: ringkasan (nilai, jumlah tanpa batal, bar sudah dibayar), cari nama/kode/WA, filter status, kode #8 char, status berwarna (+ konfirmasi saat batal, revert kalau gagal), tombol "Tandai Lunas" untuk `menunggu_konfirmasi`, pratinjau bukti di modal. Batch: jumlah pesanan per batch, konfirmasi buka/tutup. Produk: saklar aktif. Link WA pembeli lewat `waPembeli()` di `lib/toko.js`
 - Komponen admin dipecah ke `components/admin/*.jsx`, `app/admin/page.jsx` cuma shell + auth
 - Kontak toko (WA PO 0855-9119-1217) di `lib/toko.js` — jangan hardcode nomor di komponen
 - Push ke GitHub selalu lewat remote `git@github.com-ramdotcode:ramdotcode/po-kripik.git` (alias `github.com` biasa = akun lain)

@@ -5,9 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase, rupiah } from "../../lib/supabase";
 import { useCart } from "../../lib/cart";
+import { FooterWa, HeaderHalaman, InfoAntar, Logo, Stepper } from "../../components/Brand";
+import { IkonBulan, IkonKalender, IkonPanahKanan, IkonSampah, IkonSilang } from "../../components/Ikon";
 
 export default function Keranjang() {
-  const { list, setQty, totalPrice, clear } = useCart();
+  const { list, setQty, totalQty, totalPrice, clear } = useCart();
   const [nama, setNama] = useState("");
   const [wa, setWa] = useState("");
   const [catatan, setCatatan] = useState("");
@@ -62,109 +64,174 @@ export default function Keranjang() {
     }
   };
 
+  // Tandai kolom yang disebut pesan error server
+  const kolomSalah = /WhatsApp/.test(error) ? "wa" : /Nama/.test(error) ? "nama" : null;
+  const salah = (k) => (kolomSalah === k ? "border-red-300 focus:border-red-400 focus:ring-red-100" : "");
+
   return (
     <main className="pb-10">
-      <header className="sticky top-0 z-10 flex items-center gap-3 bg-brand-500 px-4 py-4 text-white shadow">
-        <Link href="/" className="text-2xl leading-none">
-          ←
-        </Link>
-        <h1 className="text-lg font-extrabold">Keranjang</h1>
-      </header>
+      <HeaderHalaman
+        judul="Keranjang"
+        sub={batch ? `Pesanan masuk ke ${batch.name}` : null}
+        kembali="/"
+      />
 
       {batch === null && (
-        <div className="mx-4 mt-4 rounded-2xl bg-stone-200 px-4 py-3 text-center text-sm font-semibold text-stone-600">
-          😴 PO lagi tutup, pesanan belum bisa dikirim.
+        <div className="mx-4 mt-4 flex items-center gap-3 rounded-3xl border border-stone-200 bg-stone-100 px-4 py-3 text-sm font-semibold text-stone-600">
+          <IkonBulan className="h-5 w-5 shrink-0" />
+          PO lagi tutup, pesanan belum bisa dikirim.
         </div>
       )}
 
       {list.length === 0 ? (
-        <div className="p-8 text-center">
-          <p className="text-sm text-stone-500">Keranjang masih kosong.</p>
-          <Link href="/" className="mt-3 inline-block font-semibold text-brand-600 underline">
-            Pilih kripik dulu →
+        <div className="px-6 pt-14 text-center">
+          <Logo className="mx-auto h-24 w-24" />
+          <p className="mt-4 text-lg font-extrabold">Keranjang masih kosong</p>
+          <p className="mt-1 text-sm text-stone-500">Yuk pilih camilan dulu, nanti balik lagi ke sini.</p>
+          <Link href="/" className="btn-oranye mt-5 h-12 px-6">
+            Pilih camilan <IkonPanahKanan className="h-4 w-4" strokeWidth={2.5} />
           </Link>
         </div>
       ) : (
         <>
-          <div className="space-y-3 p-4">
+          <ul className="space-y-3 px-4 pt-4">
             {list.map(({ product, qty }) => (
-              <div
-                key={product.id}
-                className="flex items-center gap-3 rounded-2xl bg-white p-3 shadow-sm"
-              >
+              <li key={product.id} className="kartu flex gap-3 p-3">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={product.image_url}
                   alt={product.name}
-                  className="h-16 w-16 rounded-xl object-cover"
+                  className="h-[4.5rem] w-[4.5rem] shrink-0 rounded-2xl object-cover"
                 />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold leading-tight">{product.name}</p>
-                  <p className="text-sm font-bold text-brand-600">{rupiah(product.price)}</p>
+                <div className="flex min-w-0 flex-1 flex-col">
+                  <div className="flex items-start gap-2">
+                    <p className="flex-1 text-sm font-semibold leading-snug">{product.name}</p>
+                    <button
+                      type="button"
+                      onClick={() => setQty(product, 0)}
+                      aria-label={`Hapus ${product.name}`}
+                      className="-mr-1 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-stone-400 transition hover:bg-red-50 hover:text-red-600"
+                    >
+                      <IkonSampah className="h-4 w-4" />
+                    </button>
+                  </div>
+                  <p className="text-xs text-stone-500">
+                    {rupiah(product.price)}
+                    {product.weight ? ` / ${product.weight}` : ""}
+                  </p>
+                  <div className="mt-auto flex items-center justify-between gap-2 pt-2">
+                    <Stepper
+                      kecil
+                      qty={qty}
+                      nama={product.name}
+                      onKurang={() => setQty(product, qty - 1)}
+                      onTambah={() => setQty(product, qty + 1)}
+                    />
+                    <p className="font-extrabold tabular-nums text-brand-600">{rupiah(product.price * qty)}</p>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => setQty(product, qty - 1)}
-                    className="h-8 w-8 rounded-full bg-brand-100 text-lg font-bold text-brand-600"
-                  >
-                    −
-                  </button>
-                  <span className="w-5 text-center text-sm font-bold">{qty}</span>
-                  <button
-                    onClick={() => setQty(product, qty + 1)}
-                    className="h-8 w-8 rounded-full bg-brand-500 text-lg font-bold text-white"
-                  >
-                    +
-                  </button>
-                </div>
-              </div>
+              </li>
             ))}
+          </ul>
+
+          <div className="kartu mx-4 mt-4 p-4">
+            <div className="flex items-end justify-between gap-3">
+              <div>
+                <p className="font-bold">Total</p>
+                <p className="text-xs text-stone-500">{totalQty} item</p>
+              </div>
+              <p className="text-2xl font-extrabold tabular-nums text-brand-700">{rupiah(totalPrice)}</p>
+            </div>
+            <div className="mt-3 space-y-2">
+              {batch?.note && (
+                <p className="flex items-start gap-2 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">
+                  <IkonKalender className="h-4 w-4 shrink-0 text-brand-600" />
+                  {batch.note}
+                </p>
+              )}
+              <InfoAntar />
+            </div>
           </div>
 
-          <div className="mx-4 flex items-center justify-between rounded-2xl bg-brand-100 px-4 py-3">
-            <span className="font-semibold">Total</span>
-            <span className="text-lg font-extrabold text-brand-700">{rupiah(totalPrice)}</span>
-          </div>
+          <form onSubmit={submit} className="kartu mx-4 mt-4 space-y-4 p-4">
+            <div>
+              <p className="font-extrabold">Data pemesan</p>
+              <p className="text-xs text-stone-500">Buat konfirmasi pesanan lewat WhatsApp.</p>
+            </div>
 
-          {batch && (
-            <p className="px-4 pt-3 text-center text-xs text-stone-500">
-              Pesanan masuk ke <b className="text-stone-700">{batch.name}</b>
-            </p>
-          )}
+            <div className="space-y-1.5">
+              <label htmlFor="nama" className="text-sm font-semibold">
+                Nama
+              </label>
+              <input
+                id="nama"
+                required
+                autoComplete="name"
+                value={nama}
+                onChange={(e) => setNama(e.target.value)}
+                placeholder="Nama kamu"
+                aria-invalid={kolomSalah === "nama" || undefined}
+                className={`input ${salah("nama")}`}
+              />
+            </div>
 
-          <form onSubmit={submit} className="space-y-3 p-4">
-            <input
-              required
-              value={nama}
-              onChange={(e) => setNama(e.target.value)}
-              placeholder="Nama kamu"
-              className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm outline-brand-500"
-            />
-            <input
-              required
-              value={wa}
-              onChange={(e) => setWa(e.target.value)}
-              placeholder="No. WhatsApp (contoh: 08123456789)"
-              inputMode="tel"
-              className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm outline-brand-500"
-            />
-            <textarea
-              value={catatan}
-              onChange={(e) => setCatatan(e.target.value)}
-              placeholder="Catatan (opsional)"
-              rows={2}
-              className="w-full rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm outline-brand-500"
-            />
-            {error && <p className="text-sm text-red-600">{error}</p>}
-            <button
-              disabled={saving || batch === null}
-              className="w-full rounded-2xl bg-brand-600 py-4 font-bold text-white shadow-lg disabled:opacity-50"
-            >
-              {saving ? "Menyimpan…" : `Buat Pesanan • ${rupiah(totalPrice)}`}
+            <div className="space-y-1.5">
+              <label htmlFor="wa" className="text-sm font-semibold">
+                No. WhatsApp
+              </label>
+              <input
+                id="wa"
+                required
+                type="tel"
+                inputMode="tel"
+                autoComplete="tel"
+                value={wa}
+                onChange={(e) => setWa(e.target.value)}
+                placeholder="08123456789"
+                aria-invalid={kolomSalah === "wa" || undefined}
+                className={`input ${salah("wa")}`}
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <label htmlFor="catatan" className="text-sm font-semibold">
+                Catatan <span className="font-normal text-stone-400">(opsional)</span>
+              </label>
+              <textarea
+                id="catatan"
+                value={catatan}
+                onChange={(e) => setCatatan(e.target.value)}
+                placeholder="Mis. titip buat tetangga, atau pesan lain"
+                rows={2}
+                className="input resize-none"
+              />
+            </div>
+
+            {error && (
+              <p role="alert" className="flex items-start gap-2 rounded-2xl bg-red-50 px-3 py-2.5 text-sm text-red-700">
+                <IkonSilang className="mt-0.5 h-4 w-4 shrink-0" />
+                {error}
+              </p>
+            )}
+
+            <button disabled={saving || batch === null} className="btn-oranye h-14 w-full text-base">
+              {saving ? (
+                "Menyimpan…"
+              ) : (
+                <>
+                  Buat Pesanan · {rupiah(totalPrice)}
+                  <IkonPanahKanan className="h-5 w-5" strokeWidth={2.5} />
+                </>
+              )}
             </button>
+            <p className="text-center text-xs text-stone-500">
+              Setelah ini kamu langsung diarahkan ke halaman bayar QRIS.
+            </p>
           </form>
         </>
       )}
+
+      <FooterWa className="pt-6" teks="Ada pertanyaan? WhatsApp" pesan="Halo, mau tanya soal PO kripik" />
     </main>
   );
 }
