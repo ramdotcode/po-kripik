@@ -78,7 +78,7 @@ export default function PesananSaya() {
           <div className="kartu flex items-center justify-between gap-3 px-4 py-3">
             <p className="text-sm leading-tight">
               <b>Kode unik akunmu</b>
-              <span className="block text-xs text-stone-500">Selalu jadi 3 digit terakhir nominal transfer</span>
+              <span className="block text-xs text-stone-500">3 digit terakhir nominal transfer, ikut jadi bagian pembayaran</span>
             </p>
             <span className="rounded-xl bg-brand-100 px-3 py-1.5 font-mono text-lg font-extrabold text-brand-700">
               {String(kodeAkun).padStart(3, "0")}

@@ -423,7 +423,7 @@ export default function Bayar() {
             <p className="mt-3 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">
               Transfer <b>persis</b> sampai 3 digit terakhir.{" "}
               <b className="font-mono">{String(order.kode_unik).padStart(3, "0")}</b> itu kode unik akunmu, biar
-              pembayaranmu gampang dicek admin.
+              pembayaranmu gampang dicek admin. Nominalnya ikut jadi bagian pembayaran, tidak dikembalikan.
             </p>
           ) : (
             <p className="mt-3 text-xs text-stone-500">Pastikan nominalnya pas sampai rupiah terakhir ya.</p>
