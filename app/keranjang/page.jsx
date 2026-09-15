@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { supabase, rupiah } from "../../lib/supabase";
@@ -8,7 +8,64 @@ import { useCart } from "../../lib/cart";
 import { fetchAuth, keluar, namaAkun, useSesi } from "../../lib/auth";
 import TombolGoogle from "../../components/TombolGoogle";
 import { FooterWa, HeaderHalaman, InfoAntar, Logo, Stepper } from "../../components/Brand";
-import { IkonBulan, IkonKalender, IkonPanahKanan, IkonSampah, IkonSilang } from "../../components/Ikon";
+import {
+  IkonBulan,
+  IkonCentang,
+  IkonChevronBawah,
+  IkonJam,
+  IkonKalender,
+  IkonPanahKanan,
+  IkonSampah,
+  IkonSilang,
+} from "../../components/Ikon";
+
+// Pembeli sempat berhenti di keranjang karena mengira pesanan sudah masuk.
+// Alur ini ditampilkan paling atas sampai tombol Buat Pesanan ditekan.
+const ALUR = ["Masuk Google", "Isi No. WA", "Buat Pesanan"];
+
+function BannerBelumTercatat({ sudahMasuk }) {
+  const kini = sudahMasuk ? 2 : 1;
+  return (
+    <a
+      href={sudahMasuk ? "#data-pemesan" : "#masuk"}
+      className="mx-4 mt-4 block rounded-3xl border border-amber-300 bg-amber-50 px-4 py-3 text-amber-900"
+    >
+      <p className="flex items-center gap-2 text-sm font-extrabold">
+        <IkonJam className="h-5 w-5 shrink-0 text-amber-600" />
+        Pesananmu belum tercatat
+      </p>
+      <p className="mt-0.5 text-xs leading-snug">
+        Keranjang baru jadi pesanan setelah kamu tekan <b>Buat Pesanan</b> di bawah.
+      </p>
+      <ol className="mt-2.5 grid grid-cols-3 gap-1.5">
+        {ALUR.map((judul, i) => {
+          const no = i + 1;
+          const lewat = no < kini;
+          return (
+            <li
+              key={judul}
+              aria-current={no === kini ? "step" : undefined}
+              className={`flex items-center gap-1.5 text-[11px] font-bold leading-tight ${no > kini ? "opacity-60" : ""}`}
+            >
+              <span
+                className={`grid h-5 w-5 shrink-0 place-items-center rounded-full text-white ${
+                  lewat ? "bg-green-600" : "bg-amber-500"
+                } ${no === kini ? "ring-2 ring-amber-200" : ""}`}
+              >
+                {lewat ? <IkonCentang className="h-3 w-3" strokeWidth={3.5} /> : no}
+              </span>
+              {judul}
+            </li>
+          );
+        })}
+      </ol>
+      <p className="mt-2 flex items-center justify-center gap-1 text-xs font-bold text-amber-700">
+        {sudahMasuk ? "Isi data di bawah" : "Masuk di bawah"}
+        <IkonChevronBawah className="h-4 w-4" strokeWidth={2.5} />
+      </p>
+    </a>
+  );
+}
 
 export default function Keranjang() {
   const { list, setQty, totalQty, totalPrice, clear } = useCart();
@@ -20,15 +77,29 @@ export default function Keranjang() {
   const [batch, setBatch] = useState(undefined); // undefined = belum dicek
   const router = useRouter();
   const sesi = useSesi();
+  const formRef = useRef(null);
+  const waRef = useRef(null);
+  const sesiSebelum = useRef(sesi);
 
   // Isi otomatis dari akun Google & nomor WA yang terakhir dipakai di HP ini
   useEffect(() => {
     if (!sesi) return;
     setNama((n) => n || namaAkun(sesi.user));
+    let waLama = "";
     try {
-      const w = localStorage.getItem("kripik-wa");
-      if (w) setWa((x) => x || w);
+      waLama = localStorage.getItem("kripik-wa") || "";
+      if (waLama) setWa((x) => x || waLama);
     } catch {}
+
+    // Baru saja login di halaman ini → antar langsung ke form, jangan sampai berhenti lagi
+    if (sesiSebelum.current === null && formRef.current) {
+      formRef.current.scrollIntoView({ behavior: "smooth", block: "start" });
+      if (!waLama) waRef.current?.focus({ preventScroll: true });
+    }
+  }, [sesi]);
+
+  useEffect(() => {
+    sesiSebelum.current = sesi;
   }, [sesi]);
 
   useEffect(() => {
@@ -88,7 +159,7 @@ export default function Keranjang() {
     <main className="pb-10">
       <HeaderHalaman
         judul="Keranjang"
-        sub={batch ? `Pesanan masuk ke ${batch.name}` : null}
+        sub={batch ? `PO ${batch.name}` : null}
         kembali="/"
       />
 
@@ -98,6 +169,8 @@ export default function Keranjang() {
           PO lagi tutup, pesanan belum bisa dikirim.
         </div>
       )}
+
+      {list.length > 0 && batch && sesi !== undefined && <BannerBelumTercatat sudahMasuk={!!sesi} />}
 
       {list.length === 0 ? (
         <div className="px-6 pt-14 text-center">
@@ -174,27 +247,32 @@ export default function Keranjang() {
           </div>
 
           {sesi === null ? (
-            <div className="kartu mx-4 mt-4 p-5 text-center">
+            <div id="masuk" className="kartu mx-4 mt-4 scroll-mt-4 p-5 text-center">
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-600">Langkah 1 dari 3</p>
               <p className="text-lg font-extrabold">Masuk dulu buat pesan</p>
               <p className="mt-1 text-sm text-stone-500">
-                Pesananmu tersimpan di akunmu — bisa bayar sekarang atau nanti, dan cek statusnya kapan saja.
+                Setelah masuk, isi No. WhatsApp lalu tekan <b className="text-coklat-900">Buat Pesanan</b>.
               </p>
               <TombolGoogle kembaliKe="/keranjang" className="mt-4" />
               <p className="mt-2 text-xs text-stone-400">
-                Tenang, isi keranjangmu nggak hilang. Dengan masuk, kamu setuju dengan {" "}
+                Isi keranjangmu nggak hilang, dan bayarnya bisa nanti. Dengan masuk, kamu setuju dengan{" "}
                 <Link href="/privasi" className="underline underline-offset-2">Kebijakan Privasi</Link>.
               </p>
             </div>
           ) : sesi === undefined ? (
             <div className="kartu mx-4 mt-4 h-40 animate-pulse" />
           ) : (
-          <form onSubmit={submit} className="kartu mx-4 mt-4 space-y-4 p-4">
+          <form ref={formRef} id="data-pemesan" onSubmit={submit} className="kartu mx-4 mt-4 scroll-mt-4 space-y-4 p-4">
             <div>
+              <p className="text-xs font-bold uppercase tracking-wide text-brand-600">Langkah 2 dari 3</p>
               <p className="font-extrabold">Data pemesan</p>
               <p className="text-xs text-stone-500">Dipakai kalau kami perlu menghubungimu soal pesanan.</p>
               <p className="mt-2 flex items-center justify-between gap-2 rounded-2xl bg-brand-50 px-3 py-2 text-xs text-coklat-700">
-                <span className="truncate">
-                  Masuk sebagai <b>{sesi.user.email}</b>
+                <span className="flex min-w-0 items-center gap-1.5">
+                  <IkonCentang className="h-4 w-4 shrink-0 text-green-600" strokeWidth={3} />
+                  <span className="truncate">
+                    Masuk sebagai <b>{sesi.user.email}</b>
+                  </span>
                 </span>
                 <button type="button" onClick={keluar} className="shrink-0 font-semibold text-brand-600 underline">
                   Ganti akun
@@ -224,6 +302,7 @@ export default function Keranjang() {
               </label>
               <input
                 id="wa"
+                ref={waRef}
                 required
                 type="tel"
                 inputMode="tel"
@@ -268,7 +347,7 @@ export default function Keranjang() {
               )}
             </button>
             <p className="text-center text-xs text-stone-500">
-              Bayar sekarang atau nanti — pesananmu tersimpan di menu Pesanan Saya.
+              Pesanan baru tercatat setelah tombol ini ditekan. Bayarnya bisa sekarang atau nanti lewat Pesanan Saya.
             </p>
           </form>
           )}
