@@ -42,6 +42,7 @@ Pesanan dikelompokkan per **batch PO** yang dibuka/ditutup dari halaman admin.
   - Produk: foto dikecilkan di browser (canvas, maks 800px, JPG) → bucket publik `toko/produk/`, `image_url` = URL publik penuh. Foto lama tidak dihapus (bucket `toko` tanpa policy select → `remove()` tidak jalan; ukurannya kecil)
   - Simpan form → `sort_order` ditulis ulang 1..n (cuma baris yang berubah). Menu baru default setelah menu terakhir yang punya urutan
   - Hapus menu = `order_items.product_id` di-null-kan dulu (FK tanpa on delete; nama & harga sudah tersalin di item) lalu delete. Sembunyikan sementara = saklar nonaktif
+  - Pesanan: tombol "+ Pesanan" (`components/admin/TambahPesanan.jsx`) buat pesanan manual (dari WA/langsung): pilih batch (boleh yang tutup), nama, WA opsional (disimpan `""`, link WA disembunyikan), qty per menu aktif, catatan, Belum/Sudah bayar. Insert langsung dari browser (RLS `pesanan admin`), rollback order kalau item gagal. Tanpa `user_id` & tanpa kode unik → link `/bayar/[id]` bisa dikirim ke pembeli (tombol WA / salin link di layar sukses)
 
 ## Route API (server-side, service role)
 Ada karena RLS menutup akses anon ke `orders`/`order_items`.
@@ -107,7 +108,7 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - LIVE di https://kripik.ramcode.site — Vercel project `po-kripik` (preset Next.js, deploy otomatis dari push ke `main`, env lengkap). DNS Cloudflare: CNAME → Vercel, DNS only
 - Region: Supabase di AWS **ap-southeast-2 (Sydney)** → Vercel Function Region di-set **syd1**. Request pesanan ~0,4–0,9 dtk (dulu iad1 1–2 dtk, sin1 ~1,2 dtk)
 - `public/qris.png` masih placeholder (600x700)
-- Menu & harga sesuai poster 15 Sep 2026 (`Daftar Menu - Update Website.md` di folder sumber): 15 aktif. Nonaktif (bukan dihapus, ada di order_items): Sale Pisang Jari, Kentang Manohara Seaweed. Kata "Manohara" tidak dipakai lagi. Keripik Kentang Asin/Pedes (40K/250gr, foto `keripik-kentang.jpg`) urutan 9. `migration-menu-poster.sql` SUDAH dijalankan & mencerminkan poster terbaru
+- Menu & harga sesuai poster 15 Sep 2026 (`Daftar Menu - Update Website.md` di folder sumber) + Telur Gabus Keju (27 Sep): 16 aktif. Nonaktif (bukan dihapus, ada di order_items): Sale Pisang Jari, Kentang Manohara Seaweed. Kata "Manohara" tidak dipakai lagi. Telur Gabus Keju (29K/250gr, foto `telur-gabus-keju.jpg` dari user) urutan 9, Keripik Kentang Asin/Pedes (40K/250gr, foto `keripik-kentang.jpg`) urutan 10. `migration-menu-poster.sql` SUDAH dijalankan & mencerminkan poster terbaru
 - Pesanan tes di Batch 1: 2 atas nama "Rama" (29 Agu, harga lama, status baru) + "TES Midtrans (Claude)" #4e804787 & "TES Live Webhook (Claude)" #e12f537a (Kremes Ubi, lunas via sandbox) — semua perlu ditandai Batal
 - `npm audit`: Next.js 14.2.x kena advisory high (fix-nya upgrade ke Next 16, breaking) — dibiarkan dulu
 
