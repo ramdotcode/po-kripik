@@ -9,7 +9,8 @@
 -- urutan terakhir Halaman 1.
 --
 -- 27 Sep 2026: Telur Gabus Keju (29K/250gr) masuk tepat setelah Telur Gabus
--- Manis Wijen; menu sesudahnya bergeser satu.
+-- Manis Wijen; menu sesudahnya bergeser satu. Keripik Gadung (35K, berat
+-- sengaja tidak dicantumkan) masuk di urutan paling akhir.
 -- ============================================================
 
 alter table products add column if not exists weight text;        -- mis. '250gr'
@@ -23,6 +24,10 @@ where not exists (select 1 from products where name = 'Keripik Kentang Asin/Pede
 insert into products (name, price, image_url, active)
 select 'Telur Gabus Keju', 29000, '/produk/telur-gabus-keju.jpg', true
 where not exists (select 1 from products where name = 'Telur Gabus Keju');
+
+insert into products (name, price, image_url, active)
+select 'Keripik Gadung', 35000, '/produk/keripik-gadung.jpg', true
+where not exists (select 1 from products where name = 'Keripik Gadung');
 
 update products
 set active = false, badge = null, sort_order = null
@@ -48,10 +53,11 @@ from (values
   ('Kremes Ubi',                                                '250gr', null,      13),
   ('Soes Mini Kering (Tanpa Isi)',                              '250gr', null,      14),
   ('Soes Kering Isi Coklat/Susu Vanilla/Blueberry/Keju Lumer',  '250gr', null,      15),
-  ('Tahu Walik Kering',                                         '200gr', null,      16)
+  ('Tahu Walik Kering',                                         '200gr', null,      16),
+  ('Keripik Gadung',                                            null,    null,      17)
 ) as v(name, weight, badge, urut)
 where p.name = v.name;
 
--- Cek: harus 16 baris aktif, semuanya punya berat & urutan
+-- Cek: harus 17 baris aktif, semuanya punya urutan (berat Keripik Gadung sengaja kosong)
 select sort_order, name, price, weight, badge, active
 from products order by active desc, sort_order nulls last, name;
