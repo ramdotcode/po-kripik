@@ -38,10 +38,11 @@ Pesanan dikelompokkan per **batch PO** yang dibuka/ditutup dari halaman admin.
   - pesanan milik akun & belum login → layar "Masuk dulu" (API balas 401 `perlu_login`)
 - `/pesanan` — Pesanan Saya (baca langsung via RLS `pesanan baca pemilik`). Label pembeli: Belum bayar / Bukti dicek / Bukti ditolak / Sudah bayar / Diproses / Selesai / Dibatalkan
 - `/privasi` — Kebijakan Privasi (server component, wajib untuk publish Google OAuth app); ditautkan di footer katalog & kartu login keranjang / Pesanan Saya
-- `/admin` — login Supabase Auth. 5 tab: Pesanan (filter batch, ubah status, link WA, signed URL bukti, badge lunas otomatis), Batch (CRUD + buka/tutup), Produk (tambah/ubah/hapus menu: foto, nama, harga, berat, label, urutan + ubah harga cepat & saklar aktif), QRIS, Ekspor (CSV)
+- `/admin` — login Supabase Auth. 5 tab: Pesanan (filter batch, ubah status, link WA, signed URL bukti, badge lunas otomatis), Batch (CRUD + buka/tutup), Produk (tambah/ubah/hapus menu: foto, nama, harga, berat, label, urutan + ubah harga cepat & saklar aktif), QRIS, Rekap
   - Produk: foto dikecilkan di browser (canvas, maks 800px, JPG) → bucket publik `toko/produk/`, `image_url` = URL publik penuh. Foto lama tidak dihapus (bucket `toko` tanpa policy select → `remove()` tidak jalan; ukurannya kecil)
   - Simpan form → `sort_order` ditulis ulang 1..n (cuma baris yang berubah). Menu baru default setelah menu terakhir yang punya urutan
   - Hapus menu = `order_items.product_id` di-null-kan dulu (FK tanpa on delete; nama & harga sudah tersalin di item) lalu delete. Sembunyikan sementara = saklar nonaktif
+  - Rekap (`components/admin/Rekap.jsx`, dulu tab Ekspor): dashboard per batch tanpa unduh — nilai pesanan + bar sudah/belum dibayar, tile (pesanan, bungkus, pembeli unik, rata-rata), per menu (qty dibayar/belum), pesanan per hari (maks 21 hari, sentuh kolom = detail), status, per pembeli (urut nama, buat antar). Batal tidak dihitung. Tombol CSV (`Export.jsx`, prop `pilih`) di bawahnya ikut batch yang dipilih
   - Pesanan: tombol "+ Pesanan" (`components/admin/TambahPesanan.jsx`) buat pesanan manual (dari WA/langsung): pilih batch (boleh yang tutup), nama, WA opsional (disimpan `""`, link WA disembunyikan), qty per menu aktif, catatan, Belum/Sudah bayar. Insert langsung dari browser (RLS `pesanan admin`), rollback order kalau item gagal. Tanpa `user_id` & tanpa kode unik → link `/bayar/[id]` bisa dikirim ke pembeli (tombol WA / salin link di layar sukses)
 
 ## Route API (server-side, service role)

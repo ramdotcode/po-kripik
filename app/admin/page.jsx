@@ -7,7 +7,7 @@ import { IkonGembok, IkonKeluar, IkonSilang } from "../../components/Ikon";
 import Orders from "../../components/admin/Orders";
 import Products from "../../components/admin/Products";
 import Batches from "../../components/admin/Batches";
-import Export from "../../components/admin/Export";
+import Rekap from "../../components/admin/Rekap";
 import Qris from "../../components/admin/Qris";
 
 const TABS = [
@@ -15,7 +15,7 @@ const TABS = [
   ["batch", "Batch"],
   ["produk", "Produk"],
   ["qris", "QRIS"],
-  ["ekspor", "Ekspor"],
+  ["rekap", "Rekap"],
 ];
 
 function Merek() {
@@ -242,7 +242,7 @@ export default function Admin() {
       {tab === "batch" && <Batches batches={batches} reload={reloadBatches} />}
       {tab === "produk" && <Products />}
       {tab === "qris" && <Qris />}
-      {tab === "ekspor" && <Export batches={batches} />}
+      {tab === "rekap" && <Rekap batches={batches} />}
     </main>
   );
 }

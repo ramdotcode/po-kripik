@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { downloadCsv, slug } from "../../lib/csv";
-import { IkonCentang, IkonChevronBawah, IkonGrafik, IkonTabel, IkonUnduh } from "../Ikon";
+import { IkonCentang, IkonGrafik, IkonTabel, IkonUnduh } from "../Ikon";
 
 const LABEL = {
   baru: "Baru",
@@ -36,8 +36,8 @@ function OpsiEkspor({ Ikon, judul, keterangan, sibuk, disabled, onClick }) {
   );
 }
 
-export default function Export({ batches }) {
-  const [pilih, setPilih] = useState(batches.find((b) => b.status === "buka")?.id || "semua");
+// Tombol unduh di bawah dashboard Rekap; batch-nya ikut pilihan di Rekap
+export default function Export({ batches, pilih }) {
   const [busy, setBusy] = useState("");
   const [pesan, setPesan] = useState(null); // { ok, teks }
 
@@ -136,29 +136,7 @@ export default function Export({ batches }) {
   };
 
   return (
-    <div className="space-y-3 p-4">
-      <div className="kartu space-y-1.5 p-4">
-        <label htmlFor="ekspor-batch" className="text-sm font-semibold">
-          Batch yang diekspor
-        </label>
-        <div className="relative">
-          <select
-            id="ekspor-batch"
-            value={pilih}
-            onChange={(e) => setPilih(e.target.value)}
-            className="h-11 w-full appearance-none rounded-full border border-brand-100 bg-white pl-4 pr-10 text-sm font-semibold focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-100"
-          >
-            <option value="semua">Semua batch</option>
-            {batches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name} {b.status === "buka" ? "(buka)" : ""}
-              </option>
-            ))}
-          </select>
-          <IkonChevronBawah className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2" />
-        </div>
-      </div>
-
+    <div className="space-y-3">
       <OpsiEkspor
         Ikon={IkonTabel}
         judul="Pesanan lengkap"
