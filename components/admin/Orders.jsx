@@ -4,14 +4,12 @@ import { useEffect, useState } from "react";
 import { supabase, rupiah } from "../../lib/supabase";
 import { waPembeli } from "../../lib/toko";
 import { Logo } from "../Brand";
-import TambahPesanan from "./TambahPesanan";
 import {
   IkonCari,
   IkonCentang,
   IkonChevronBawah,
   IkonGambar,
   IkonLuar,
-  IkonPlus,
   IkonTutup,
   IkonWhatsApp,
 } from "../Ikon";
@@ -148,8 +146,6 @@ export default function Orders({ batches }) {
   const [cari, setCari] = useState("");
   const [simpan, setSimpan] = useState({}); // id -> "…" | "ok"
   const [bukti, setBukti] = useState(null); // pesanan yang buktinya dibuka
-  const [tambah, setTambah] = useState(false); // form pesanan manual terbuka
-  const [muatUlang, setMuatUlang] = useState(0);
 
   useEffect(() => {
     (async () => {
@@ -163,7 +159,7 @@ export default function Orders({ batches }) {
       setOrders(data || []);
       setLoading(false);
     })();
-  }, [filter, muatUlang]);
+  }, [filter]);
 
   const setStatus = async (id, baru) => {
     const o = orders.find((x) => x.id === id);
@@ -236,28 +232,22 @@ export default function Orders({ batches }) {
 
   return (
     <div className="space-y-3 p-4">
-      <div className="flex gap-2">
-        <label className="relative block min-w-0 flex-1">
-          <span className="sr-only">Batch</span>
-          <select
-            value={filter}
-            onChange={(e) => setFilter(e.target.value)}
-            className="h-11 w-full appearance-none rounded-full border border-brand-100 bg-white pl-4 pr-10 text-sm font-semibold shadow-sm focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-100"
-          >
-            <option value="semua">Semua batch</option>
-            {batches.map((b) => (
-              <option key={b.id} value={b.id}>
-                {b.name} {b.status === "buka" ? "(buka)" : ""}
-              </option>
-            ))}
-          </select>
-          <IkonChevronBawah className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2" />
-        </label>
-        <button type="button" onClick={() => setTambah(true)} className="btn-oranye h-11 shrink-0 px-4 text-sm">
-          <IkonPlus className="h-4 w-4" />
-          Pesanan
-        </button>
-      </div>
+      <label className="relative block">
+        <span className="sr-only">Batch</span>
+        <select
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="h-11 w-full appearance-none rounded-full border border-brand-100 bg-white pl-4 pr-10 text-sm font-semibold shadow-sm focus:border-brand-400 focus:outline-none focus:ring-4 focus:ring-brand-100"
+        >
+          <option value="semua">Semua batch</option>
+          {batches.map((b) => (
+            <option key={b.id} value={b.id}>
+              {b.name} {b.status === "buka" ? "(buka)" : ""}
+            </option>
+          ))}
+        </select>
+        <IkonChevronBawah className="pointer-events-none absolute right-4 top-1/2 h-4 w-4 -translate-y-1/2" />
+      </label>
 
       {loading ? (
         <>
@@ -269,9 +259,7 @@ export default function Orders({ batches }) {
         <div className="px-6 pt-10 text-center">
           <Logo className="mx-auto h-20 w-20" />
           <p className="mt-3 text-lg font-extrabold">Belum ada pesanan</p>
-          <p className="mt-1 text-sm text-stone-500">
-            Pesanan baru dari pembeli bakal muncul di sini. Ada yang pesan lewat WA? Tekan “+ Pesanan”.
-          </p>
+          <p className="mt-1 text-sm text-stone-500">Pesanan baru dari pembeli bakal muncul di sini.</p>
         </div>
       ) : (
         <>
@@ -392,17 +380,15 @@ export default function Orders({ batches }) {
                     </div>
 
                     <div className="mt-2 flex flex-wrap items-center gap-2">
-                      {o.phone && (
-                        <a
-                          href={waPembeli(o.phone, `Halo ${o.customer_name}, soal pesanan #${kode} PO Kripik`)}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="inline-flex h-8 items-center gap-1.5 rounded-full bg-green-50 px-3 text-xs font-bold text-green-700 ring-1 ring-green-200"
-                        >
-                          <IkonWhatsApp className="h-4 w-4" />
-                          {o.phone}
-                        </a>
-                      )}
+                      <a
+                        href={waPembeli(o.phone, `Halo ${o.customer_name}, soal pesanan #${kode} PO Kripik`)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex h-8 items-center gap-1.5 rounded-full bg-green-50 px-3 text-xs font-bold text-green-700 ring-1 ring-green-200"
+                      >
+                        <IkonWhatsApp className="h-4 w-4" />
+                        {o.phone}
+                      </a>
                       <BadgeBayar o={o} />
                     </div>
 
@@ -485,19 +471,6 @@ export default function Orders({ batches }) {
             </ul>
           )}
         </>
-      )}
-
-      {tambah && (
-        <TambahPesanan
-          batches={batches}
-          batchAwal={filter !== "semua" ? filter : null}
-          onTutup={() => setTambah(false)}
-          onTersimpan={(batchId) => {
-            // Pindah ke batch pesanan baru kalau list lagi difilter batch lain
-            if (filter !== "semua" && filter !== batchId) setFilter(batchId);
-            else setMuatUlang((n) => n + 1);
-          }}
-        />
       )}
 
       {bukti && (
