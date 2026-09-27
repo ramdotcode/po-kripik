@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { supabase, rupiah } from "../../lib/supabase";
 import Export from "./Export";
+import { labelMetode } from "../../lib/toko";
 import { IkonChevronBawah, IkonPaket } from "../Ikon";
 
 // Sama dengan aturan di Orders.jsx: sudah bayar = paid_at terisi ATAU salah satu status ini
@@ -78,8 +79,20 @@ function hitung(orders) {
     }
   }
 
+  // Uang yang sudah masuk, dipisah per cara bayar (cash di tangan vs masuk rekening/QRIS)
+  const URUT = ["cash", "qris", "transfer", "midtrans"];
+  const metode = new Map();
+  for (const o of lunas) {
+    const k = URUT.includes(o.paid_via) ? o.paid_via : "lain";
+    const m = metode.get(k) || { k, label: labelMetode(k === "lain" ? null : k), n: 0, rupiah: 0 };
+    m.n += 1;
+    m.rupiah += o.total || 0;
+    metode.set(k, m);
+  }
+
   return {
     nilai: jumlah(aktif),
+    metode: [...URUT, "lain"].filter((k) => metode.has(k)).map((k) => metode.get(k)),
     masuk: jumlah(lunas),
     nPesanan: aktif.length,
     nLunas: lunas.length,
@@ -320,6 +333,22 @@ export default function Rekap({ batches }) {
             <Tile label="Rata-rata" nilai={pendek(Math.round(r.nilai / r.nPesanan))} sub="per pesanan" />
           </div>
 
+          {r.metode.length > 0 && (
+            <Bagian judul="Sudah dibayar lewat" sub="Cash = uang di tangan, sisanya masuk QRIS / rekening.">
+              <table className="w-full text-sm">
+                <tbody>
+                  {r.metode.map((m) => (
+                    <tr key={m.k} className="border-b border-brand-100 last:border-0">
+                      <td className="py-1.5 font-semibold">{m.label}</td>
+                      <td className="py-1.5 text-right tabular-nums text-stone-500">{m.n} pesanan</td>
+                      <td className="w-28 py-1.5 text-right font-bold tabular-nums">{rupiah(m.rupiah)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Bagian>
+          )}
+
           <Bagian judul="Per menu" sub="Jumlah bungkus yang harus disiapkan. Pesanan batal nggak dihitung.">
             <Legenda />
             <ul className="mt-3 space-y-3">
@@ -396,7 +425,11 @@ export default function Rekap({ batches }) {
                     <td className="py-1.5 pl-2 text-right">
                       <span className="block tabular-nums">{rupiah(o.total)}</span>
                       <span className={`text-[11px] font-bold ${sudahBayar(o) ? "text-green-700" : "text-stone-500"}`}>
-                        {sudahBayar(o) ? "✓ Dibayar" : o.status === "menunggu_konfirmasi" ? "Cek bukti" : "Belum"}
+                        {sudahBayar(o)
+                          ? `✓ ${["cash", "qris", "transfer"].includes(o.paid_via) ? labelMetode(o.paid_via) : o.paid_via === "midtrans" ? "QRIS" : "Dibayar"}`
+                          : o.status === "menunggu_konfirmasi"
+                            ? "Cek bukti"
+                            : "Belum"}
                       </span>
                     </td>
                   </tr>

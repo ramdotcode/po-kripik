@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { supabase } from "../../lib/supabase";
 import { downloadCsv, slug } from "../../lib/csv";
+import { labelMetode } from "../../lib/toko";
 import { IkonCentang, IkonGrafik, IkonTabel, IkonUnduh } from "../Ikon";
 
 const LABEL = {
@@ -78,9 +79,8 @@ export default function Export({ batches, pilih }) {
             o.kode_unik ? String(o.kode_unik).padStart(3, "0") : "",
             (o.total || 0) + (o.kode_unik || 0),
             LABEL[o.status] || o.status,
-            o.paid_at
-              ? `${new Date(o.paid_at).toLocaleString("id-ID")}${o.paid_via === "midtrans" ? " (QRIS otomatis)" : ""}`
-              : "",
+            o.paid_at ? new Date(o.paid_at).toLocaleString("id-ID") : "",
+            o.paid_at ? labelMetode(o.paid_via) : "",
             o.notes || "",
           ]);
         }
@@ -92,7 +92,7 @@ export default function Export({ batches, pilih }) {
       }
       downloadCsv(
         `pesanan-${namaFile}.csv`,
-        ["Batch", "Waktu", "Kode", "Nama", "WhatsApp", "Produk", "Harga", "Qty", "Subtotal", "Kode unik", "Nominal transfer (per pesanan)", "Status", "Dibayar", "Catatan"],
+        ["Batch", "Waktu", "Kode", "Nama", "WhatsApp", "Produk", "Harga", "Qty", "Subtotal", "Kode unik", "Nominal transfer (per pesanan)", "Status", "Dibayar", "Cara bayar", "Catatan"],
         rows
       );
       setPesan({ ok: true, teks: `${rows.length} baris terunduh.` });

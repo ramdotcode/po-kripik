@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase, rupiah } from "../../lib/supabase";
-import { waPembeli } from "../../lib/toko";
+import { labelMetode, METODE_BAYAR, waPembeli } from "../../lib/toko";
 import {
   IkonCentang,
   IkonChevronBawah,
@@ -31,6 +31,7 @@ export default function TambahPesanan({ batches, batchAwal, onTutup, onTersimpan
   const [catatan, setCatatan] = useState("");
   const [qty, setQty] = useState({}); // product_id -> jumlah
   const [lunas, setLunas] = useState(false);
+  const [caraBayar, setCaraBayar] = useState(null); // cash/qris/transfer — wajib kalau sudah bayar
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [hasil, setHasil] = useState(null); // pesanan yang baru tersimpan
@@ -72,6 +73,7 @@ export default function TambahPesanan({ batches, batchAwal, onTutup, onTersimpan
     if (!n) return setErr("Nama pembeli wajib diisi.");
     if (phone && !/^[0-9+\-\s()]{8,20}$/.test(phone)) return setErr("Nomor WhatsApp tidak valid.");
     if (!dipilih.length) return setErr("Pilih minimal 1 menu.");
+    if (lunas && !caraBayar) return setErr("Pilih bayarnya pakai Cash, QRIS, atau Transfer.");
 
     setBusy(true);
     setErr("");
@@ -84,7 +86,7 @@ export default function TambahPesanan({ batches, batchAwal, onTutup, onTersimpan
         total,
         status: lunas ? "lunas" : "baru",
         batch_id: batchId,
-        ...(lunas ? { paid_at: new Date().toISOString(), paid_via: "manual" } : {}),
+        ...(lunas ? { paid_at: new Date().toISOString(), paid_via: caraBayar } : {}),
       })
       .select("id")
       .single();
@@ -110,7 +112,7 @@ export default function TambahPesanan({ batches, batchAwal, onTutup, onTersimpan
     }
 
     setBusy(false);
-    setHasil({ id: order.id, nama: n, phone, total, lunas });
+    setHasil({ id: order.id, nama: n, phone, total, lunas, caraBayar });
     onTersimpan(batchId);
   };
 
@@ -140,7 +142,7 @@ export default function TambahPesanan({ batches, batchAwal, onTutup, onTersimpan
             {hasil.nama} · #{kode} · <b className="text-coklat-900">{rupiah(hasil.total)}</b>
           </p>
           <p className="mt-1 text-xs font-semibold text-stone-500">
-            {hasil.lunas ? "Dicatat sudah bayar" : "Dicatat belum bayar"}
+            {hasil.lunas ? `Dicatat sudah bayar · ${labelMetode(hasil.caraBayar)}` : "Dicatat belum bayar"}
           </p>
         </div>
 
@@ -325,6 +327,23 @@ export default function TambahPesanan({ batches, batchAwal, onTutup, onTersimpan
               </button>
             ))}
           </div>
+          {lunas && (
+            <div className="mt-2 grid grid-cols-3 gap-2" role="group" aria-label="Cara bayar">
+              {METODE_BAYAR.map(([nilai, teks]) => (
+                <button
+                  key={nilai}
+                  type="button"
+                  aria-pressed={caraBayar === nilai}
+                  onClick={() => setCaraBayar(nilai)}
+                  className={`h-11 rounded-full text-sm font-bold transition ${
+                    caraBayar === nilai ? "bg-green-600 text-white" : "bg-green-50 text-green-800 ring-1 ring-green-200"
+                  }`}
+                >
+                  {teks}
+                </button>
+              ))}
+            </div>
+          )}
         </fieldset>
 
         {err && (

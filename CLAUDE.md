@@ -75,12 +75,12 @@ Ada karena RLS menutup akses anon ke `orders`/`order_items`.
 - `batches`: id, name, status (`buka`/`tutup`), note, created_at, closed_at
   - Unique index parsial `batches_hanya_satu_buka` → cuma boleh SATU batch `status='buka'`
   - Karena itu, membuka batch harus menutup yang lain dulu (lihat `components/admin/Batches.jsx`)
-- `orders`: + `batch_id`, `paid_at`, `paid_via` (`midtrans`/`manual`)
+- `orders`: + `batch_id`, `paid_at`, `paid_via` (`cash`/`qris`/`transfer` dipilih admin, `midtrans` = QRIS otomatis, `manual` = data lama tanpa keterangan; label & daftar di `METODE_BAYAR`/`labelMetode` `lib/toko.js`, kolom text tanpa constraint)
 - `payment_intents`: order_ref (PK), order_id, amount, status (transaction_status Midtrans terakhir), qr_url, expiry_time, payload, notif, checked_at, paid_at. RLS: admin baca; insert/update/delete dikunci policy RESTRICTIVE (server only)
 - `admins`: user_id (FK auth.users), email. Helper `public.is_admin()` dipakai semua policy RLS
 - Status pesanan: baru → menunggu_konfirmasi → lunas → diproses → selesai / batal. Dianggap sudah bayar: `paid_at` terisi ATAU status lunas/diproses/selesai
   - Label admin: `baru` = Belum Bayar, `lunas` = Sudah Bayar. ACC = set `lunas`. Tolak = `baru` + `proof_note` (alasan) + `payment_proof_url` null
-  - Admin ubah status ke lunas/diproses/selesai → `paid_at` diisi (`paid_via` manual); balik ke baru/menunggu → `paid_at` dikosongkan (kecuali dari midtrans)
+  - Admin ubah status ke lunas/diproses/selesai → muncul pilihan Cash/QRIS/Transfer (`ModalMetode` di Orders.jsx) → `paid_at` + `paid_via`. ACC bukti = otomatis `qris`. Badge "Dibayar · Cash" bisa disentuh buat ganti cara bayar. Form + Pesanan "Sudah bayar" wajib pilih cara bayar. Rekap punya bagian "Sudah dibayar lewat", CSV punya kolom "Cara bayar"; balik ke baru/menunggu → `paid_at` dikosongkan (kecuali dari midtrans)
 - RLS: `products`/`batches` boleh dibaca publik, tulis khusus admin. `orders`/`order_items` admin only
 - Bucket `bukti` privat — admin baca lewat `createSignedUrl` (5 menit)
 - Foto produk: file lokal di `public/produk/*.jpg`, image_url berisi path relatif `/produk/...`

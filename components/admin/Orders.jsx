@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { supabase, rupiah } from "../../lib/supabase";
-import { waPembeli } from "../../lib/toko";
+import { labelMetode, METODE_BAYAR, waPembeli } from "../../lib/toko";
 import { Logo } from "../Brand";
 import TambahPesanan from "./TambahPesanan";
 import {
@@ -125,14 +125,85 @@ function ModalBukti({ order, onTutup, onLunas, onTolak }) {
   );
 }
 
-function BadgeBayar({ o }) {
+// Pilih cara bayar saat pesanan ditandai sudah bayar (atau ganti cara bayar yang sudah tercatat)
+function ModalMetode({ order, sekarang, onPilih, onTutup }) {
+  useEffect(() => {
+    const esc = (e) => e.key === "Escape" && onTutup();
+    window.addEventListener("keydown", esc);
+    return () => window.removeEventListener("keydown", esc);
+  }, [onTutup]);
+
+  return (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Dibayar pakai apa?"
+      onClick={onTutup}
+      className="fixed inset-0 z-50 flex items-end justify-center bg-coklat-900/60 p-3 sm:items-center"
+    >
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-md rounded-3xl bg-white p-4 shadow-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <p className="text-lg font-extrabold">Dibayar pakai apa?</p>
+            <p className="truncate text-xs text-stone-500">
+              {order.customer_name} · #{kodeOf(order)} · <b className="text-coklat-900">{rupiah(transferOf(order))}</b>
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onTutup}
+            aria-label="Batal"
+            className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-50"
+          >
+            <IkonTutup className="h-4 w-4" />
+          </button>
+        </div>
+        <div className="mt-4 grid grid-cols-3 gap-2">
+          {METODE_BAYAR.map(([nilai, teks]) => (
+            <button
+              key={nilai}
+              type="button"
+              aria-pressed={sekarang === nilai}
+              onClick={() => onPilih(nilai)}
+              className={`h-14 rounded-2xl text-sm font-extrabold transition active:scale-[0.98] ${
+                sekarang === nilai
+                  ? "bg-green-600 text-white"
+                  : "bg-brand-50 text-coklat-900 ring-1 ring-brand-200 hover:bg-brand-100"
+              }`}
+            >
+              {teks}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BadgeBayar({ o, onGantiMetode }) {
   if (o.status === "batal") return null;
+  if (o.paid_at && o.paid_via === "midtrans")
+    return (
+      <span className="inline-flex h-8 items-center rounded-full bg-green-100 px-3 text-xs font-bold text-green-700">
+        Lunas otomatis (QRIS)
+      </span>
+    );
+  // Sudah bayar manual: tampilkan caranya, bisa disentuh buat diganti
+  if (sudahBayar(o))
+    return (
+      <button
+        type="button"
+        onClick={onGantiMetode}
+        aria-label={`Sudah dibayar lewat ${labelMetode(o.paid_via)}, ganti cara bayar`}
+        className="inline-flex h-8 items-center gap-1 rounded-full bg-green-100 px-3 text-xs font-bold text-green-700"
+      >
+        <IkonCentang className="h-3.5 w-3.5" strokeWidth={2.6} />
+        Dibayar · {["cash", "qris", "transfer"].includes(o.paid_via) ? labelMetode(o.paid_via) : "pilih cara bayar"}
+        <IkonChevronBawah className="h-3.5 w-3.5" />
+      </button>
+    );
   const [teks, warna] =
-    o.paid_at && o.paid_via === "midtrans"
-      ? ["Lunas otomatis (QRIS)", "bg-green-100 text-green-700"]
-      : sudahBayar(o)
-      ? ["Sudah dibayar", "bg-green-100 text-green-700"]
-      : o.status === "menunggu_konfirmasi"
+    o.status === "menunggu_konfirmasi"
       ? ["Bukti masuk", "bg-amber-100 text-amber-800"]
       : o.proof_note
       ? ["Bukti ditolak", "bg-red-50 text-red-700"]
@@ -150,6 +221,7 @@ export default function Orders({ batches }) {
   const [bukti, setBukti] = useState(null); // pesanan yang buktinya dibuka
   const [tambah, setTambah] = useState(false); // form pesanan manual terbuka
   const [muatUlang, setMuatUlang] = useState(0);
+  const [metode, setMetode] = useState(null); // { order, status } — menunggu admin pilih cara bayar
 
   useEffect(() => {
     (async () => {
@@ -165,18 +237,30 @@ export default function Orders({ batches }) {
     })();
   }, [filter, muatUlang]);
 
-  const setStatus = async (id, baru) => {
+  // caraBayar: cash/qris/transfer. Kalau pesanan baru ditandai sudah bayar tanpa caraBayar,
+  // admin ditanya dulu lewat ModalMetode.
+  const setStatus = async (id, baru, caraBayar) => {
     const o = orders.find((x) => x.id === id);
     if (!o || o.status === baru) return;
     if (baru === "batal" && !window.confirm(`Batalkan pesanan ${o.customer_name} (#${kodeOf(o)})?`)) return;
+    if (SUDAH_BAYAR.includes(baru) && !o.paid_at && !caraBayar) return setMetode({ order: o, status: baru });
 
     // "Sudah bayar" dicatat di paid_at biar ringkasan, ekspor, & halaman pembeli ikut benar
     const patch = { status: baru };
     if (SUDAH_BAYAR.includes(baru) && !o.paid_at)
-      Object.assign(patch, { paid_at: new Date().toISOString(), paid_via: "manual", proof_note: null });
+      Object.assign(patch, { paid_at: new Date().toISOString(), paid_via: caraBayar, proof_note: null });
     if (["baru", "menunggu_konfirmasi"].includes(baru) && o.paid_at && o.paid_via !== "midtrans")
       Object.assign(patch, { paid_at: null, paid_via: null });
     return simpanPatch(o, patch);
+  };
+
+  // Dari ModalMetode: lanjutkan ubah status, atau cuma ganti cara bayar pesanan yang sudah lunas
+  const pilihMetode = (caraBayar) => {
+    const { order: o, status: baru } = metode;
+    setMetode(null);
+    if (baru) return setStatus(o.id, baru, caraBayar);
+    if (o.paid_via === caraBayar) return;
+    return simpanPatch(o, { paid_via: caraBayar, ...(o.paid_at ? {} : { paid_at: new Date().toISOString() }) });
   };
 
   // Tolak bukti: balik ke "Belum Bayar", alasannya tampil di halaman pembeli, pembeli upload ulang
@@ -403,7 +487,7 @@ export default function Orders({ batches }) {
                           {o.phone}
                         </a>
                       )}
-                      <BadgeBayar o={o} />
+                      <BadgeBayar o={o} onGantiMetode={() => setMetode({ order: o, status: null })} />
                     </div>
 
                     <ul className="mt-3 space-y-1 border-t border-dashed border-brand-200 pt-3 text-sm">
@@ -458,7 +542,7 @@ export default function Orders({ batches }) {
                           </button>
                           <button
                             type="button"
-                            onClick={() => setStatus(o.id, "lunas")}
+                            onClick={() => setStatus(o.id, "lunas", "qris")}
                             className="btn-oranye h-10 px-4 text-sm"
                           >
                             <IkonCentang className="h-4 w-4" strokeWidth={2.6} />
@@ -500,12 +584,21 @@ export default function Orders({ batches }) {
         />
       )}
 
+      {metode && (
+        <ModalMetode
+          order={metode.order}
+          sekarang={metode.status ? null : metode.order.paid_via}
+          onPilih={pilihMetode}
+          onTutup={() => setMetode(null)}
+        />
+      )}
+
       {bukti && (
         <ModalBukti
           order={bukti}
           onTutup={() => setBukti(null)}
           onLunas={() => {
-            setStatus(bukti.id, "lunas");
+            setStatus(bukti.id, "lunas", "qris"); // bukti dari halaman bayar = QRIS
             setBukti(null);
           }}
           onTolak={() => {
