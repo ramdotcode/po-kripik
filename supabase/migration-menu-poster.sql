@@ -14,6 +14,8 @@
 --
 -- 28 Sep 2026: Keripik Gadung jadi "Keripik Gadung (Kentang Putih)"; label BARU
 -- untuk Telur Gabus Keju & Keripik Gadung (Kentang Putih).
+-- Poster v5: dua menu baru itu naik ke urutan 5–6 (setelah Rengginang Mini);
+-- label BARU Batagor Kering Pedes dicabut. Halaman 1 = 1–9, Halaman 2 = 10–17.
 -- ============================================================
 
 alter table products add column if not exists weight text;        -- mis. '250gr'
@@ -42,24 +44,24 @@ update products p
 set weight = v.weight, badge = v.badge, sort_order = v.urut
 from (values
   -- Halaman 1
-  ('Batagor Kering',                                            '250gr', 'FAVORIT',  1),
-  ('Batagor Kering Pedes',                                      '250gr', 'BARU',     2),
-  ('Makaroni Rujak',                                            '200gr', 'FAVORIT',  3),
-  ('Rengginang Mini',                                           '250gr', 'FAVORIT',  4),
-  ('Simping Kencur',                                            '200gr', null,       5),
-  ('Sumpia Udang',                                              '250gr', null,       6),
-  ('Samosa',                                                    '200gr', null,       7),
-  ('Telur Gabus Manis Wijen',                                   '250gr', null,       8),
-  ('Telur Gabus Keju',                                          '250gr', 'BARU',     9),
-  ('Keripik Kentang Asin/Pedes',                                '250gr', null,      10),
+  ('Batagor Kering',                                             '250gr', 'FAVORIT',  1),
+  ('Batagor Kering Pedes',                                       '250gr', null,       2),
+  ('Makaroni Rujak',                                             '200gr', 'FAVORIT',  3),
+  ('Rengginang Mini',                                            '250gr', 'FAVORIT',  4),
+  ('Telur Gabus Keju',                                           '250gr', 'BARU',     5),
+  ('Keripik Gadung (Kentang Putih)',                             null,    'BARU',     6),
+  ('Simping Kencur',                                             '200gr', null,       7),
+  ('Sumpia Udang',                                               '250gr', null,       8),
+  ('Samosa',                                                     '200gr', null,       9),
   -- Halaman 2
-  ('Pisang Coklat Lampung',                                     '250gr', null,      11),
-  ('Pisang Sale Lidah',                                         '250gr', null,      12),
-  ('Kremes Ubi',                                                '250gr', null,      13),
-  ('Soes Mini Kering (Tanpa Isi)',                              '250gr', null,      14),
-  ('Soes Kering Isi Coklat/Susu Vanilla/Blueberry/Keju Lumer',  '250gr', null,      15),
-  ('Tahu Walik Kering',                                         '200gr', null,      16),
-  ('Keripik Gadung (Kentang Putih)',                            null,    'BARU',    17)
+  ('Telur Gabus Manis Wijen',                                    '250gr', null,      10),
+  ('Keripik Kentang Asin/Pedes',                                 '250gr', null,      11),
+  ('Pisang Coklat Lampung',                                      '250gr', null,      12),
+  ('Pisang Sale Lidah',                                          '250gr', null,      13),
+  ('Kremes Ubi',                                                 '250gr', null,      14),
+  ('Soes Mini Kering (Tanpa Isi)',                               '250gr', null,      15),
+  ('Soes Kering Isi Coklat/Susu Vanilla/Blueberry/Keju Lumer',   '250gr', null,      16),
+  ('Tahu Walik Kering',                                          '200gr', null,      17)
 ) as v(name, weight, badge, urut)
 where p.name = v.name;
 
