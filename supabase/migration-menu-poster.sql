@@ -14,8 +14,11 @@
 --
 -- 28 Sep 2026: Keripik Gadung jadi "Keripik Gadung (Kentang Putih)"; label BARU
 -- untuk Telur Gabus Keju & Keripik Gadung (Kentang Putih).
--- Poster v5: dua menu baru itu naik ke urutan 5–6 (setelah Rengginang Mini);
--- label BARU Batagor Kering Pedes dicabut. Halaman 1 = 1–9, Halaman 2 = 10–17.
+-- Poster v5: dua menu baru naik ke urutan 4–5 (setelah Rengginang Mini);
+-- label BARU Batagor Kering Pedes dicabut & ia turun ke urutan 6 (FAVORIT di
+-- baris atas, BARU di baris kedua). Halaman 1 = 1–9, Halaman 2 = 10–17.
+-- Urutan final: Batagor Kering, Makaroni Rujak, Rengginang Mini, Telur Gabus Keju,
+-- Keripik Gadung (Kentang Putih), Batagor Kering Pedes, Simping, Sumpia, Samosa.
 -- ============================================================
 
 alter table products add column if not exists weight text;        -- mis. '250gr'
@@ -45,11 +48,11 @@ set weight = v.weight, badge = v.badge, sort_order = v.urut
 from (values
   -- Halaman 1
   ('Batagor Kering',                                             '250gr', 'FAVORIT',  1),
-  ('Batagor Kering Pedes',                                       '250gr', null,       2),
-  ('Makaroni Rujak',                                             '200gr', 'FAVORIT',  3),
-  ('Rengginang Mini',                                            '250gr', 'FAVORIT',  4),
-  ('Telur Gabus Keju',                                           '250gr', 'BARU',     5),
-  ('Keripik Gadung (Kentang Putih)',                             null,    'BARU',     6),
+  ('Makaroni Rujak',                                             '200gr', 'FAVORIT',  2),
+  ('Rengginang Mini',                                            '250gr', 'FAVORIT',  3),
+  ('Telur Gabus Keju',                                           '250gr', 'BARU',     4),
+  ('Keripik Gadung (Kentang Putih)',                             null,    'BARU',     5),
+  ('Batagor Kering Pedes',                                       '250gr', null,       6),
   ('Simping Kencur',                                             '200gr', null,       7),
   ('Sumpia Udang',                                               '250gr', null,       8),
   ('Samosa',                                                     '200gr', null,       9),
